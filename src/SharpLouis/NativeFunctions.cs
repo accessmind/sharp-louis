@@ -14,16 +14,13 @@
 /// Inspired by LibLouis.NET by Leonard de Ruijter
 /// Heavily based on Jens Jensen's LibLouis.CSharpWrapper
 /// 
-/// Corresponds to values defined in liblouis.h
+/// Helper for calling functions from LibLouis.dll
 /// </summary>
-[Flags]
-public enum TranslationModes {
-    NoContractions = 1,
-    ComputerBrailleAtCursor = 2,
-    DotsInputOutput = 4,
-    // for historic reasons 8 and 16 are free
-    ComputerBrailleLeftFromCursor = 32,
-    UnicodeBraille = 64, // In liblouis.h: ucBrl = 64,
-    NoUndefined = 128,
-    PartialTranslation = 256
+internal enum NativeFunction {
+    charsToDots,
+    dotsToChars,
+    translateString,       // Do NOT Use the TypeForm parameter
+    translateStringTfe,    // Use the TypeForm parameter
+    backTranslateString,   // Do NOT Use the TypeForm parameter
+    backTranslateStringTfe // Use the TypeForm parameter
 }

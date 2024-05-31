@@ -25,8 +25,8 @@ namespace SharpLouis;
 /// Inspired by LibLouis.NET by Leonard de Ruijter
 /// Heavily based on Jens Jensen's LibLouis.CSharpWrapper
 ///
-    /// The main Wrapper class. Use <c>Wrapper.Create</c> to initialize the wrapper and start working with it
-    /// </summary>
+/// The main Wrapper class. Use <c>Wrapper.Create</c> to initialize the wrapper and start working with it
+/// </summary>
 public class Wrapper: IDisposable {
     /// <summary>
     /// // Counts errors reported from LibLouis dll and is used for checking the Logger Callback mechanism
@@ -48,7 +48,7 @@ public class Wrapper: IDisposable {
     private delegate void Func(int level, string message);
     private static void LogCallback(int level, string message) {
         GlobalLibLouisErrorCount++;
-        theClient.OnLibLouisLog(string.Format(": Received callback from LibLouis, describing an error: Level={0} Message={1}", level, message));
+        theClient?.OnLibLouisLog(string.Format(": Received callback from LibLouis, describing an error: Level={0} Message={1}", level, message));
     }
     #endregion
 
@@ -109,15 +109,6 @@ public class Wrapper: IDisposable {
  );
     #endregion
 
-    private enum NativeFunction {
-        charsToDots,
-        dotsToChars,
-        translateString,       // Do NOT Use the TypeForm parameter
-        translateStringTfe,    // Use the TypeForm parameter
-        backTranslateString,   // Do NOT Use the TypeForm parameter
-        backTranslateStringTfe // Use the TypeForm parameter
-    }
-
     TypeForm[] DummyTypeForms; // Dummy parameter
 
     public bool CharsToDots(string chars, out string dots) {
@@ -141,7 +132,7 @@ public class Wrapper: IDisposable {
     }
 
     public bool BackTranslateStringWithTypeForms(string dots, out string text, out TypeForm[] typeForms) {
-        return CommonNativeCall(NativeFunction.backTranslateStringTfe, dots, out text, null, out typeForms);
+        return CommonNativeCall(NativeFunction.backTranslateStringTfe, dots, out text, [], out typeForms);
     }
 
     public string GetVersion() {
@@ -190,7 +181,7 @@ public class Wrapper: IDisposable {
         if (nativeFunction == NativeFunction.translateStringTfe || nativeFunction == NativeFunction.backTranslateStringTfe) {
             throw new ArgumentException(nativeFunction.ToString());
         }
-        return CommonNativeCall(nativeFunction, input, out output, null, out DummyTypeForms);
+        return CommonNativeCall(nativeFunction, input, out output, [], out DummyTypeForms);
     }
 
     /// <summary>
@@ -227,16 +218,16 @@ public class Wrapper: IDisposable {
                             result = lou_dotsToChar(tablePaths, inBuf, outBuf, inputLength, BackTranslationMode);
                             break;
                         case NativeFunction.translateString:
-                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, null, null, TranslationMode);
+                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, [], string.Empty, TranslationMode);
                             break;
                         case NativeFunction.translateStringTfe:
-                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, null, TranslationMode);
+                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, String.Empty, TranslationMode);
                             break;
                         case NativeFunction.backTranslateString:
-                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, null, null, BackTranslationMode);
+                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, [], string.Empty, BackTranslationMode);
                             break;
                         case NativeFunction.backTranslateStringTfe:
-                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, null, BackTranslationMode);
+                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, string.Empty, BackTranslationMode);
                             break;
                     }
                     fixed (byte* pInBufAfter = inBuf, pOutBufAfter = outBuf) {
@@ -249,8 +240,8 @@ public class Wrapper: IDisposable {
                 }
             }
         }
-        output = null;
-        tfeOutput = null;
+        output = string.Empty;
+        tfeOutput = [];
         if (result != 1) {
             return OnError("Result is not 1");
         }
@@ -366,7 +357,7 @@ public class Wrapper: IDisposable {
     }
 
     private void Log(string s) {
-        theClient.OnWrapperLog(s); // Call logging mechanism established by the client 
+        theClient?.OnWrapperLog(s); // Call logging mechanism established by the client 
     }
 
     /// <summary>
@@ -400,6 +391,7 @@ public class Wrapper: IDisposable {
     /// </summary>
     private Wrapper(string tableNames) {
         this.tableNames = tableNames;
+        this.DummyTypeForms = [];
         Log(string.Format(": TableNames='{0}'", tableNames));
 #if DEBUG
         this.useLogCallback = true;
@@ -425,7 +417,12 @@ this.useLogCallback = false;
     /// <summary>
     /// Prevent use of default constructor
     /// </summary>
-    private Wrapper() { }
+    private Wrapper() {
+        this.DummyTypeForms = [];
+        this.encoding = GetEncoding(0);
+        this.tableNames = string.Empty;
+        this.tablePaths = string.Empty;
+    }
 
     public bool DirectoryExists(string path) {
         if (Directory.Exists(path)) {
@@ -452,8 +449,8 @@ this.useLogCallback = false;
     /// </summary>
     /// <returns></returns>
     private bool CheckInstallation() {
-        string executingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-        string libLouisDir = Path.Combine(executingDirectory, "LibLouis");
+        string executingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
+        string? libLouisDir = Path.Combine(executingDirectory, "LibLouis");
         if (!DirectoryExists(libLouisDir)) {
             return false;
         }

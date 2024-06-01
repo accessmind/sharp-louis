@@ -20,8 +20,6 @@ namespace SharpLouis;
 /// software distributed under the License is distributed on an "AS IS" BASIS,
 /// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 /// See the License for the specific language governing permissions and limitations under the License.
-/// Inspired by LibLouis.NET by Leonard de Ruijter
-/// Heavily based on Jens Jensen's LibLouis.CSharpWrapper
 //////
 ///Translation tables collection.
 /// Workks with the tables.json file provided in this library as part of LibLouis and actually being a result of tables processing made by the LLJT console utility

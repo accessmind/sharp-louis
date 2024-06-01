@@ -1,18 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFramework>net8.0-windows</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Platforms>x64</Platforms>
         <Product>SharpLouis</Product>
-        <Version>0.1.0.0</Version>
-        <InformationalVersion>0.1</InformationalVersion>
-        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+        <Version>1.0.0</Version>
         <Description>.NET wrapper for LibLouis, the open-source Braille translator and back-translator library</Description>
         <Authors>andre-accessmind</Authors>
         <PackageId>AccessMind.SharpLouis</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-        <PackageTags>liblouis;braille;braille-translation;wrapper</PackageTags>
+        <PackageTags>liblouis;braille;braille-translation;wrapper;windows;interop</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
 

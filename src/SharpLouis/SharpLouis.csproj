@@ -10,6 +10,7 @@
         <Authors>andre-accessmind</Authors>
         <PackageId>AccessMind.SharpLouis</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+        <RepositoryUrl>https://github.com/accessmind/sharp-louis</RepositoryUrl>
         <PackageTags>liblouis;braille;braille-translation;wrapper;windows;interop</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>

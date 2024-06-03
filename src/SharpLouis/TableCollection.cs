@@ -33,9 +33,9 @@ public class TableCollection: ICollection<TranslationTable> {
 
     public bool IsReadOnly { get;}
 
-    public TableCollection PopulateFromJson() {
+    public TableCollection? PopulateFromJson() {
         using var file = File.OpenRead(TablesJson);
-        this.tables = JsonSerializer.Deserialize<List<TranslationTable>>(file);
+        this.tables = JsonSerializer.Deserialize<List<TranslationTable>>(file)!;
         return this;
     }
 

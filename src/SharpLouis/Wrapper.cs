@@ -350,7 +350,7 @@ public class Wrapper: IDisposable {
     }
 
     public void UnregisterCallback() {
-        lou_registerLogCallback(null);
+        lou_registerLogCallback(null!);
         Log(string.Format(": Call to native method 'lou_registerLogCallback(null)' returned."));
     }
 

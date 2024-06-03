@@ -1,10 +1,12 @@
 <Project>
-  <PropertyGroup>
-    <BaseOutputPath>$(SolutionDir)\Bin</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(SolutionDir)\Obj</BaseIntermediateOutputPath>
-    <LangVersion>latest</LangVersion>
-    <Copyright>Copyright © 2024 AccessMind LLC.</Copyright>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <BaseOutputPath>$(SolutionDir)\Bin</BaseOutputPath>
+        <BaseIntermediateOutputPath>$(SolutionDir)\Obj</BaseIntermediateOutputPath>
+        <LangVersion>latest</LangVersion>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+        <Copyright>Copyright © 2024 AccessMind LLC.</Copyright>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 </Project>

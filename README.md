@@ -78,9 +78,13 @@ It has the following methods:
 * `TranslationTable FindByFileName(string fileName)` — Accepts a file name and finds the corresponding translation table.
 * `Dictionary<string, string> ListLanguages()` — Searches all the tables and lists the languages supported by those tables. Returns a dictionary where the key of each element is a language code and the value is its full English name.
 
+## Contributing
+
+All contributions, big or small, are welcome! Please create an issue before submitting a pull request, thus it will be easier to track everyone’s work. Let’s improve SharpLouis together!
+
 ## License
 
-Copyright © 2024 [André Polykanine](https://github.com/Menelion), [AccessMind LLC.](https://accessmind.io/)  
+Copyright © 2024 [André Polykanine](https://github.com/Menelion), [AccessMind LLC.](https://accessmind.io/) and contributors.  
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.  
 You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0].  
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  

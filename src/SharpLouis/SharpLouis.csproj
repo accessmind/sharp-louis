@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -13,7 +12,8 @@
         <RepositoryUrl>https://github.com/accessmind/sharp-louis</RepositoryUrl>
         <PackageProjectUrl>https://accessmind.io/</PackageProjectUrl>
         <PackageTags>liblouis;braille;braille-translation;wrapper;windows;interop</PackageTags>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReadmeFile>docs/README.md</PackageReadmeFile>
+        <PackageReleaseNotes>https://github.com/accessmind/sharp-louis/blob/master/CHANGELOG.md</PackageReleaseNotes>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
@@ -34,7 +34,8 @@
             <Visible>false</Visible>
             <PackagePath>lib/$(TargetFramework)</PackagePath>
         </None>
-        <None Include="../../README.md" Pack="true" Visible="false" PackagePath="/" />
+        <None Include="../../README.md" Pack="true" Visible="false" PackagePath="/docs" />
+        <None Include="../../CHANGELOG.md" Pack="true" Visible="false" PackagePath="/docs" />
     </ItemGroup>
 
 </Project>

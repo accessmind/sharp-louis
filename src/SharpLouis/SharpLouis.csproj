@@ -11,7 +11,7 @@
         <PackageId>AccessMind.SharpLouis</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/accessmind/sharp-louis</RepositoryUrl>
-        <ProjectUrl>https://accessmind.io/</ProjectUrl>
+        <PackageProjectUrl>https://accessmind.io/</PackageProjectUrl>
         <PackageTags>liblouis;braille;braille-translation;wrapper;windows;interop</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>

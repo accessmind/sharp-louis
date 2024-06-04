@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0-windows</TargetFramework>
+        <TargetFramework>net8.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Platforms>x64</Platforms>
         <Product>SharpLouis</Product>
@@ -11,6 +11,7 @@
         <PackageId>AccessMind.SharpLouis</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/accessmind/sharp-louis</RepositoryUrl>
+        <ProjectUrl>https://accessmind.io/</ProjectUrl>
         <PackageTags>liblouis;braille;braille-translation;wrapper;windows;interop</PackageTags>
         <PackageReadmeFile>README.md</PackageReadmeFile>
     </PropertyGroup>
@@ -29,6 +30,9 @@
     <ItemGroup>
         <None Update="LibLouis\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Pack>true</Pack>
+            <Visible>false</Visible>
+            <PackagePath>lib/$(TargetFramework)</PackagePath>
         </None>
         <None Include="../../README.md" Pack="true" Visible="false" PackagePath="/" />
     </ItemGroup>

@@ -28,12 +28,16 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="LibLouis/**">
+        <!-- Content is included in packages by default. Much more detail on packing can be found at
+             https://learn.microsoft.com/en-us/nuget/reference/msbuild-targets -->
+        <Content Include="LibLouis\**" Exclude="LibLouis\liblouis.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Pack>true</Pack>
             <Visible>false</Visible>
-            <PackagePath>lib/$(TargetFramework)/LibLouis</PackagePath>
+            <!-- But by default the Content won't be included by projects that reference your package. This metadata
+                 changes that default behavior.  -->
+            <PackageCopyToOutput>true</PackageCopyToOutput>
         </Content>
+        <Content Include="./LibLouis/liblouis.dll" PackagePath="runtimes/win-x64/native" />
         <None Include="../../README.md" Pack="true" Visible="false" PackagePath="/docs" />
         <None Include="../../CHANGELOG.md" Pack="true" Visible="false" PackagePath="/docs" />
     </ItemGroup>

@@ -346,15 +346,17 @@ public class Wrapper: IDisposable {
 
     public void Free() {
         lou_free();
-        Log(string.Format(": Call to native method 'lou_free()' returned."));
     }
 
     public void UnregisterCallback() {
         lou_registerLogCallback(null!);
-        Log(string.Format(": Call to native method 'lou_registerLogCallback(null)' returned."));
     }
 
     private void Log(string s) {
+        if (theClient is null) {
+            return;
+        }
+
         theClient?.OnWrapperLog(s); // Call logging mechanism established by the client 
     }
 

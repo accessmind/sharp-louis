@@ -28,14 +28,28 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Copy LibLouis files to output during build (for local development) -->
         <None Update="LibLouis\**">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <Pack>true</Pack>
             <Visible>false</Visible>
-            <PackagePath>lib/$(TargetFramework)</PackagePath>
         </None>
-        <None Include="../../README.md" Pack="true" Visible="false" PackagePath="/docs" />
-        <None Include="../../CHANGELOG.md" Pack="true" Visible="false" PackagePath="/docs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Native DLL: goes to runtimes/win-x64/native/ for proper NuGet native asset handling -->
+        <None Include="LibLouis\liblouis.dll" Pack="true" PackagePath="runtimes/win-x64/native" Visible="false" />
+
+        <!-- Tables metadata and translation tables: go to content folder -->
+        <None Include="LibLouis\tables.json" Pack="true" PackagePath="content/LibLouis" Visible="false" />
+        <None Include="LibLouis\tables\**" Pack="true" PackagePath="content/LibLouis/tables" Visible="false" />
+
+        <!-- Build targets: copied to both build/ and buildTransitive/ for proper MSBuild integration -->
+        <None Include="build\**" Pack="true" PackagePath="build" Visible="false" />
+        <None Include="build\**" Pack="true" PackagePath="buildTransitive" Visible="false" />
+
+        <!-- Documentation -->
+        <None Include="../../README.md" Pack="true" Visible="false" PackagePath="docs" />
+        <None Include="../../CHANGELOG.md" Pack="true" Visible="false" PackagePath="docs" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,38 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    This targets file ensures that the LibLouis native DLL and tables are copied
+    to the correct location in the consuming project's output directory.
+
+    Expected output structure:
+      $(OutDir)/LibLouis/liblouis.dll
+      $(OutDir)/LibLouis/tables.json
+      $(OutDir)/LibLouis/tables/*.ctb, *.utb, etc.
+  -->
+
+  <ItemGroup>
+    <!-- Native DLL -->
+    <None Include="$(MSBuildThisFileDirectory)../runtimes/win-x64/native/liblouis.dll"
+          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/win-x64/native/liblouis.dll')">
+      <Link>LibLouis/liblouis.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </None>
+
+    <!-- Tables metadata -->
+    <None Include="$(MSBuildThisFileDirectory)../content/LibLouis/tables.json"
+          Condition="Exists('$(MSBuildThisFileDirectory)../content/LibLouis/tables.json')">
+      <Link>LibLouis/tables.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </None>
+
+    <!-- Translation tables -->
+    <None Include="$(MSBuildThisFileDirectory)../content/LibLouis/tables/**/*"
+          Condition="Exists('$(MSBuildThisFileDirectory)../content/LibLouis/tables/')">
+      <Link>LibLouis/tables/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Visible>false</Visible>
+    </None>
+  </ItemGroup>
+
+</Project>

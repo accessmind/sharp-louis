@@ -26,11 +26,6 @@ namespace SharpLouis;
 /// The main Wrapper class. Use <c>Wrapper.Create</c> to initialize the wrapper and start working with it
 /// </summary>
 public class Wrapper: IDisposable {
-    /// <summary>
-    /// // Counts errors reported from LibLouis dll and is used for checking the Logger Callback mechanism
-    /// </summary>
-    public static int GlobalLibLouisErrorCount { get; private set; }
-
     const int TranslationMode = (int)(TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput); // Common for all member functions
     const int BackTranslationMode = 0; // The "mode" parameter is deprecated during backtranslation and must be set to 0 !!
 
@@ -41,14 +36,6 @@ public class Wrapper: IDisposable {
     /// </summary>
     private const string TablesFolder = @"LibLouis\tables";
     private const string LibLouisDll = @"LibLouis\liblouis.dll";
-
-    #region LogCallBack
-    private delegate void Func(int level, string message);
-    private static void LogCallback(int level, string message) {
-        GlobalLibLouisErrorCount++;
-        theClient?.OnLibLouisLog(string.Format(": Received callback from LibLouis, describing an error: Level={0} Message={1}", level, message));
-    }
-    #endregion
 
     #region DllImport
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
@@ -78,9 +65,6 @@ public class Wrapper: IDisposable {
 
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     private static extern void lou_free();
-
-    [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-    private static extern void lou_registerLogCallback(Func callback);
 
     [DllImport(LibLouisDll, CharSet = CharSet.Unicode)]
     private static extern unsafe int lou_translateString(
@@ -280,7 +264,6 @@ public class Wrapper: IDisposable {
         int length = OutputLengthIsKnown(nativeFunction) ? outputLength : 0;
         TypeForm[] result = new TypeForm[length];
         Array.Copy(tfeBuf, result, length);
-        Log(string.Format("(): Tfe.{0}", TfeToString(result)));
         return result;
     }
 
@@ -328,7 +311,6 @@ public class Wrapper: IDisposable {
             return;
         }
         string message = string.Format(": The buffer '{0}' changed from {1} to {2} during call to native code - even if it was supposed to be pinned!", id, pBefore, pAfter);
-        Log(message);
         throw new Exception(message);
     }
 
@@ -340,24 +322,12 @@ public class Wrapper: IDisposable {
     }
 
     private bool OnError(string s) {
-        Log(string.Format(": Error: '{0}'", s));
+
         return false;
     }
 
     public void Free() {
         lou_free();
-    }
-
-    public void UnregisterCallback() {
-        lou_registerLogCallback(null!);
-    }
-
-    private void Log(string s) {
-        if (theClient is null) {
-            return;
-        }
-
-        theClient?.OnWrapperLog(s); // Call logging mechanism established by the client 
     }
 
     /// <summary>
@@ -377,13 +347,7 @@ public class Wrapper: IDisposable {
     private readonly int charSize;
     private readonly Encoding encoding;
     private string tablePaths;
-    private readonly bool useLogCallback = false;
 
-    /// <summary>
-    /// Only for preventing GC from collecting the delegate. MUST BE STATIC to keep the GC away !!
-    /// See https://stackoverflow.com/questions/75223488/delegate-getting-gc-even-after-pinning
-    /// </summary>
-    private static readonly Func loggingCallback = LogCallback;
     private readonly string tableNames;
 
     /// <summary>
@@ -392,26 +356,15 @@ public class Wrapper: IDisposable {
     private Wrapper(string tableNames) {
         this.tableNames = tableNames;
         this.DummyTypeForms = [];
-        Log(string.Format(": TableNames='{0}'", tableNames));
-#if DEBUG
-        this.useLogCallback = true;
-#else
-this.useLogCallback = false;
-#endif
 
-        if (useLogCallback) {
-            Log(string.Format(": Registering LibLouis LogCallback function"));
-            lou_registerLogCallback(loggingCallback); // Register the static function LoggingCallback as a callback""
-        }
         // string version = GetVersion();
-        // Log(string.Format(": LibLouis Version {0}", version));
+
         charSize = lou_charSize();
-        Log(string.Format(": CharSize={0}", charSize));
+
         encoding = GetEncoding(charSize);  // Get the encoding type based on the lou_charSize.
-        Log(string.Format(": Encoding={0}", encoding.ToString()));
 
         tablePaths = Path.Combine(TablesFolder, tableNames); // According to the documentation only the first name needs to contain the tableBase !! 
-        Log(string.Format(": Tables='{0}'", tablePaths));
+
     }
 
     /// <summary>
@@ -440,7 +393,7 @@ this.useLogCallback = false;
     }
 
     private bool OnMissingItem(string itemType, string path) {
-        Log(string.Format("{0} does not exist: '{1}'", itemType, path));
+
         return false;
     }
 
@@ -472,7 +425,7 @@ this.useLogCallback = false;
                 return false;
             }
         }
-        Log(string.Format(": All tables in '{0}' were found", tableNames));
+
         return true;
     }
 
@@ -481,16 +434,11 @@ this.useLogCallback = false;
     public void Dispose() {
         if (!disposed) {
             Free();                // Clear all tables
-            UnregisterCallback();  // Prevent callbacks to delegate belonging to this object
             disposed = true;       // Handles later async calls from the GC 
         }
     }
 
-    private static IClient? theClient = null;
-
-    public static Wrapper? Create(string tableNames, IClient? client) {
-        theClient = client; // Establish logging
-
+    public static Wrapper? Create(string tableNames) {
         Wrapper wrapper = new Wrapper(tableNames);
         bool ok = wrapper.CheckInstallation();
         return ok ? wrapper : null;

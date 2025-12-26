@@ -2,6 +2,46 @@
 
 .NET wrapper for the [LibLouis](https://github.com/liblouis/liblouis) Braille translator and back-translator library.
 
+## Installation
+
+Install via NuGet Package Manager:
+
+```
+dotnet add package AccessMind.SharpLouis
+```
+
+Or via the Package Manager Console in Visual Studio:
+
+```
+Install-Package AccessMind.SharpLouis
+```
+
+The package includes the native LibLouis DLL and all translation tables, which are automatically copied to your output directory.
+
+## Quick Start
+
+```csharp
+using SharpLouis;
+
+// Implement IClient for logging (can be minimal)
+public class MyApp : IClient
+{
+    public void OnWrapperLog(string message) => Console.WriteLine(message);
+    public void OnLibLouisLog(string message) => Console.WriteLine($"LibLouis: {message}");
+
+    public void TranslateToBraille()
+    {
+        // Create wrapper with a translation table
+        using var wrapper = Wrapper.Create("en-ueb-g1.ctb", this);
+
+        if (wrapper != null && wrapper.TranslateString("Hello World", out string braille))
+        {
+            Console.WriteLine(braille); // Outputs Unicode Braille
+        }
+    }
+}
+```
+
 ## What Is It?
 
 When working with [Braille](https://en.wikipedia.org/wiki/Braille) input and output, one needs to have a tool that ideally would take into account all the particularities and intricacies of the Braille code for various languages and needs (contracted Braille, Unicode Braille, on-the-fly translation and so on). The TL;DR is that there is no straightforward one-to-one way of translating a given message from print to Braille and vice-versa, without knowing the language used, the code variant (known as Braille table) inside that language, sometimes the context and so on, and so forth.
@@ -78,9 +118,62 @@ It has the following methods:
 * `TranslationTable FindByFileName(string fileName)` — Accepts a file name and finds the corresponding translation table.
 * `Dictionary<string, string> ListLanguages()` — Searches all the tables and lists the languages supported by those tables. Returns a dictionary where the key of each element is a language code and the value is its full English name.
 
+## Building from Source
+
+### Prerequisites
+
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- Windows x64 (currently the only supported platform)
+
+### Clone and Build
+
+```bash
+git clone https://github.com/accessmind/sharp-louis.git
+cd sharp-louis
+dotnet build SharpLouis.sln
+```
+
+### Build Configurations
+
+- **Debug**: Full debug symbols, no optimization
+- **Release**: Optimized build, no debug symbols
+
+```bash
+# Debug build
+dotnet build SharpLouis.sln -c Debug
+
+# Release build
+dotnet build SharpLouis.sln -c Release
+```
+
+### Create NuGet Package
+
+```bash
+dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
+```
+
+The package will be created in the `Bin/` directory.
+
+### Project Structure
+
+```
+sharp-louis/
+├── SharpLouis.sln              # Solution file
+├── src/
+│   └── SharpLouis/
+│       ├── SharpLouis.csproj   # Project file
+│       ├── Wrapper.cs          # Main wrapper class with P/Invoke
+│       ├── build/              # MSBuild targets for NuGet consumers
+│       └── LibLouis/
+│           ├── liblouis.dll    # Native library (Windows x64)
+│           ├── tables.json     # Table metadata
+│           └── tables/         # Translation tables
+└── README.md
+```
+
 ## Contributing
 
-All contributions, big or small, are welcome! Please create an issue before submitting a pull request, thus it will be easier to track everyone’s work. Let’s improve SharpLouis together!
+All contributions, big or small, are welcome! Please create an issue before submitting a pull request, thus it will be easier to track everyone's work. Let's improve SharpLouis together!
 
 ## License
 

@@ -31,7 +31,7 @@ public class TableCollection: ICollection<TranslationTable> {
 
     public int Count { get { return tables.Count; } }
 
-    public bool IsReadOnly { get;}
+    public bool IsReadOnly { get; }
 
     public TableCollection? PopulateFromJson() {
         using var file = File.OpenRead(TablesJson);
@@ -58,9 +58,9 @@ public class TableCollection: ICollection<TranslationTable> {
                 select (table.Language, new CultureInfo(table.Language.Split('-')[0]).EnglishName))
                 .Distinct()
                .ToDictionary();
-                                   }
+    }
 
-        public void Add(TranslationTable item) => ((ICollection<TranslationTable>)tables).Add(item);
+    public void Add(TranslationTable item) => ((ICollection<TranslationTable>)tables).Add(item);
     public void Clear() => ((ICollection<TranslationTable>)tables).Clear();
     public bool Contains(TranslationTable item) => ((ICollection<TranslationTable>)tables).Contains(item);
     public void CopyTo(TranslationTable[] array, int arrayIndex) => ((ICollection<TranslationTable>)tables).CopyTo(array, arrayIndex);

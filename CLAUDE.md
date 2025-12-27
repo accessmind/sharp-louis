@@ -27,6 +27,14 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
   - `Wrapper.cs` - Main wrapper class with P/Invoke declarations and translation methods
   - `TableCollection.cs` - Fluent API for filtering translation tables
   - `TranslationTable.cs` - Translation table metadata structure
+  - `TranslationModes.cs` - Translation mode flags enum
+  - `TypeForm.cs` - Typeform enum for emphasis styles
+  - `NativeFunctions.cs` - Enum for native function selection
+  - `BrailleTranslationTable/` - Metadata structures
+    - `BrailleContraction.cs` - Contraction type constants
+    - `BrailleMode.cs` - Dots mode constants (6-dot, 8-dot)
+    - `BrailleType.cs` - Braille type constants
+    - `TranslationDirection.cs` - Translation direction constants
   - `build/AccessMind.SharpLouis.targets` - MSBuild targets for NuGet package consumers
   - `LibLouis/` - Native assets
     - `liblouis.dll` - Windows x64 native library
@@ -36,16 +44,18 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 ## Key Architecture Points
 
 ### Native Interop
-- P/Invoke declarations are in `Wrapper.cs` (lines 54-108)
+- P/Invoke declarations are in `Wrapper.cs` (lines 40-92)
 - DLL path is hardcoded as `LibLouis\liblouis.dll` relative to executing assembly
 - Uses `CallingConvention.StdCall` with `CharSet.Unicode`
 - Requires `AllowUnsafeBlocks` for pointer operations
 
 ### NuGet Packaging
+- Current version: 1.0.1
 - Native DLL goes to `runtimes/win-x64/native/` in the package
 - Tables go to `content/LibLouis/` in the package
 - `build/AccessMind.SharpLouis.targets` copies files to consumer's output directory
 - Targets are included in both `build/` and `buildTransitive/` for transitive dependency support
+- Output paths use custom base paths: `Bin/` and `Obj/` at solution root
 
 ### Translation Tables
 - Tables are loaded from `LibLouis\tables\` relative to the DLL
@@ -57,6 +67,7 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 - Windows x64 only (single `liblouis.dll`)
 - Fixed translation mode: `NoUndefined | UnicodeBraille | DotsInputOutput`
 - UTF-32 LibLouis build
+- Platform is restricted to x64 in project file
 
 ## Code Style
 
@@ -64,3 +75,4 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 - C# latest language version
 - Nullable reference types enabled
 - Implicit usings enabled
+- .NET 8.0 target framework

@@ -26,11 +26,6 @@ namespace SharpLouis;
 /// The main Wrapper class. Use <c>Wrapper.Create</c> to initialize the wrapper and start working with it
 /// </summary>
 public class Wrapper: IDisposable {
-    /// <summary>
-    /// // Counts errors reported from LibLouis dll and is used for checking the Logger Callback mechanism
-    /// </summary>
-    public static int GlobalLibLouisErrorCount { get; private set; }
-
     const int TranslationMode = (int)(TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput); // Common for all member functions
     const int BackTranslationMode = 0; // The "mode" parameter is deprecated during backtranslation and must be set to 0 !!
 
@@ -41,14 +36,6 @@ public class Wrapper: IDisposable {
     /// </summary>
     private const string TablesFolder = @"LibLouis\tables";
     private const string LibLouisDll = @"LibLouis\liblouis.dll";
-
-    #region LogCallBack
-    private delegate void Func(int level, string message);
-    private static void LogCallback(int level, string message) {
-        GlobalLibLouisErrorCount++;
-        theClient?.OnLibLouisLog(string.Format(": Received callback from LibLouis, describing an error: Level={0} Message={1}", level, message));
-    }
-    #endregion
 
     #region DllImport
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
@@ -79,9 +66,6 @@ public class Wrapper: IDisposable {
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     private static extern void lou_free();
 
-    [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-    private static extern void lou_registerLogCallback(Func callback);
-
     [DllImport(LibLouisDll, CharSet = CharSet.Unicode)]
     private static extern unsafe int lou_translateString(
         [In][MarshalAs(UnmanagedType.LPStr)] string tableList, // const char *tableList
@@ -107,6 +91,7 @@ public class Wrapper: IDisposable {
  );
     #endregion
 
+    private static readonly char[] NullChars = ['\0'];
     TypeForm[] DummyTypeForms; // Dummy parameter
 
     public bool CharsToDots(string chars, out string dots) {
@@ -137,13 +122,13 @@ public class Wrapper: IDisposable {
         throw new NotImplementedException();
     }
 
-    private byte[] CreateOutputBuffer(int inBufLength) {
+    private static byte[] CreateOutputBuffer(int inBufLength) {
         int outputLength = Math.Max((inBufLength * 2), 1024);  // Always twice the inputbuffer size, but at least 1kB
         byte[] outBuf = new byte[outputLength];
         return outBuf;
     }
 
-    private TypeForm[] CreateTfeBuffer(int inputLength, NativeFunction nativeFunction, TypeForm[] tfeInput) {
+    private static TypeForm[] CreateTfeBuffer(int inputLength, NativeFunction nativeFunction, TypeForm[] tfeInput) {
         // Developer's note: By initializing "result" to TypeForm.Hex5c5c instead of the default TypeForm.plain_text (0x0000) it is easily verified
         // that lou_backTranslateString() when called with  "out TypeForm[] tfe" where tfe != null initializes the first half of the buffer to the value 0x3030
         // and leaves the last half of the buffer untouched.
@@ -160,8 +145,8 @@ public class Wrapper: IDisposable {
         return result;
     }
 
-    private int GetTfeLength(int inputLength, NativeFunction nativeFunction) {
-#warning TODO Find out why a smaller defaultBufferSize, for instance "defaultBufferSize =(inputLength * 2)" causes strange crashes !!
+    private static int GetTfeLength(int inputLength, NativeFunction nativeFunction) {
+        // TODO Find out why a smaller defaultBufferSize, for instance "defaultBufferSize =(inputLength * 2)" causes strange crashes !!
         int defaultTfeBufferSize = Math.Max(1024, (inputLength * 2)); // Twice as many Typeform items as input elements, but at least 1024
         switch (nativeFunction) {
             case NativeFunction.translateStringTfe:
@@ -196,8 +181,8 @@ public class Wrapper: IDisposable {
         int result = 0;
         // The following 3 buffers are owned by managed code and passed to native code. They are pinned by the "fixed" clause.
         byte[] inBuf = encoding.GetBytes(input);
-        byte[] outBuf = CreateOutputBuffer(inBuf.Length);
-        TypeForm[] tfeBuf = CreateTfeBuffer(input.Length, nativeFunction, tfeInput);
+        byte[] outBuf = Wrapper.CreateOutputBuffer(inBuf.Length);
+        TypeForm[] tfeBuf = Wrapper.CreateTfeBuffer(input.Length, nativeFunction, tfeInput);
         // The following 2 integers are owned by managed code and passed to native code. They don't need pinning, because they are simple stack-variables.
         int inputLength = input.Length;
         int outputLength = outBuf.Length;
@@ -247,10 +232,10 @@ public class Wrapper: IDisposable {
             return OnError("Output buffer is null");
         }
         if (result == 1 && OutputLengthIsKnown(nativeFunction) && outputLength == outBuf.Length) {
-            return OnLengthError(outputLength);
+            return Wrapper.OnLengthError(outputLength);
         }
         output = GetOutputString(nativeFunction, outBuf, outputLength, charSize);
-        tfeOutput = GetOutputTypeForms(nativeFunction, tfeBuf, outputLength);
+        tfeOutput = Wrapper.GetOutputTypeForms(nativeFunction, tfeBuf, outputLength);
         return true;
     }
 
@@ -270,21 +255,20 @@ public class Wrapper: IDisposable {
         } else {
             s = encoding.GetString(output); // The whole outputbuffer
         }
-        return s.TrimEnd(new char[] { '\0' }); // Remove all trailing null characters
+        return s.TrimEnd(NullChars); // Remove all trailing null characters
     }
 
-    private TypeForm[] GetOutputTypeForms(NativeFunction nativeFunction, TypeForm[] tfeBuf, int outputLength) {
+    private static TypeForm[] GetOutputTypeForms(NativeFunction nativeFunction, TypeForm[] tfeBuf, int outputLength) {
         if (!TfeMustBeCopied(nativeFunction)) {
-            return new TypeForm[0];
+            return Array.Empty<TypeForm>();
         }
         int length = OutputLengthIsKnown(nativeFunction) ? outputLength : 0;
         TypeForm[] result = new TypeForm[length];
         Array.Copy(tfeBuf, result, length);
-        Log(string.Format("(): Tfe.{0}", TfeToString(result)));
         return result;
     }
 
-    private bool OutputLengthIsKnown(NativeFunction nativeFunction) {
+    private static bool OutputLengthIsKnown(NativeFunction nativeFunction) {
         switch (nativeFunction) {
             case NativeFunction.translateString:
                 return true;
@@ -298,7 +282,7 @@ public class Wrapper: IDisposable {
         return false;
     }
 
-    private bool TfeMustBeCopied(NativeFunction nativeFunction) {
+    private static bool TfeMustBeCopied(NativeFunction nativeFunction) {
         switch (nativeFunction) {
             case NativeFunction.translateStringTfe:
                 return true;
@@ -308,7 +292,7 @@ public class Wrapper: IDisposable {
         return false;
     }
 
-    private string TfeToString(TypeForm[] tfe) {
+    private static string TfeToString(TypeForm[] tfe) {
         if (tfe is null) {
             return "null";
         }
@@ -323,39 +307,28 @@ public class Wrapper: IDisposable {
         return (string.Format("Length={0} HexValues={1}", tfe.Length, sb.ToString()));
     }
 
-    private void CheckPinning(string id, int pBefore, int pAfter) {
+    private static void CheckPinning(string id, int pBefore, int pAfter) {
         if (pBefore == pAfter) {
             return;
         }
         string message = string.Format(": The buffer '{0}' changed from {1} to {2} during call to native code - even if it was supposed to be pinned!", id, pBefore, pAfter);
-        Log(message);
         throw new Exception(message);
     }
 
-    private bool OnLengthError(int outputLength) {
+    private static bool OnLengthError(int outputLength) {
         // According to footnote 2 in documentation:
         // "When the output buffer is not big enough, lou_translateString returns a partial translation that is more or less accurate
         // up until the returned inlen/outlen, and treats it as a successful translation, i.e. also returns 1."
         return OnError(string.Format(" Result=1 but output may have been truncated to {0} characters to fit size of outputbuffer", outputLength));
     }
 
-    private bool OnError(string s) {
-        Log(string.Format(": Error: '{0}'", s));
+    private static bool OnError(string s) {
+
         return false;
     }
 
-    public void Free() {
+    public static void Free() {
         lou_free();
-        Log(string.Format(": Call to native method 'lou_free()' returned."));
-    }
-
-    public void UnregisterCallback() {
-        lou_registerLogCallback(null!);
-        Log(string.Format(": Call to native method 'lou_registerLogCallback(null)' returned."));
-    }
-
-    private void Log(string s) {
-        theClient?.OnWrapperLog(s); // Call logging mechanism established by the client 
     }
 
     /// <summary>
@@ -375,13 +348,7 @@ public class Wrapper: IDisposable {
     private readonly int charSize;
     private readonly Encoding encoding;
     private string tablePaths;
-    private readonly bool useLogCallback = false;
 
-    /// <summary>
-    /// Only for preventing GC from collecting the delegate. MUST BE STATIC to keep the GC away !!
-    /// See https://stackoverflow.com/questions/75223488/delegate-getting-gc-even-after-pinning
-    /// </summary>
-    private static readonly Func loggingCallback = LogCallback;
     private readonly string tableNames;
 
     /// <summary>
@@ -390,26 +357,15 @@ public class Wrapper: IDisposable {
     private Wrapper(string tableNames) {
         this.tableNames = tableNames;
         this.DummyTypeForms = [];
-        Log(string.Format(": TableNames='{0}'", tableNames));
-#if DEBUG
-        this.useLogCallback = true;
-#else
-this.useLogCallback = false;
-#endif
 
-        if (useLogCallback) {
-            Log(string.Format(": Registering LibLouis LogCallback function"));
-            lou_registerLogCallback(loggingCallback); // Register the static function LoggingCallback as a callback""
-        }
         // string version = GetVersion();
-        // Log(string.Format(": LibLouis Version {0}", version));
+
         charSize = lou_charSize();
-        Log(string.Format(": CharSize={0}", charSize));
+
         encoding = GetEncoding(charSize);  // Get the encoding type based on the lou_charSize.
-        Log(string.Format(": Encoding={0}", encoding.ToString()));
 
         tablePaths = Path.Combine(TablesFolder, tableNames); // According to the documentation only the first name needs to contain the tableBase !! 
-        Log(string.Format(": Tables='{0}'", tablePaths));
+
     }
 
     /// <summary>
@@ -422,7 +378,7 @@ this.useLogCallback = false;
         this.tablePaths = string.Empty;
     }
 
-    public bool DirectoryExists(string path) {
+    private static bool DirectoryExists(string path) {
         if (Directory.Exists(path)) {
             return true;
         }
@@ -430,15 +386,15 @@ this.useLogCallback = false;
         return OnMissingItem("Directory", path);
     }
 
-    private bool FileExists(string path) {
+    private static bool FileExists(string path) {
         if (File.Exists(path)) {
             return true;
         }
         return OnMissingItem("File", path);
     }
 
-    private bool OnMissingItem(string itemType, string path) {
-        Log(string.Format("{0} does not exist: '{1}'", itemType, path));
+    private static bool OnMissingItem(string itemType, string path) {
+
         return false;
     }
 
@@ -449,15 +405,15 @@ this.useLogCallback = false;
     private bool CheckInstallation() {
         string executingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
         string? libLouisDir = Path.Combine(executingDirectory, "LibLouis");
-        if (!DirectoryExists(libLouisDir)) {
+        if (!Wrapper.DirectoryExists(libLouisDir)) {
             return false;
         }
         string liblouisDll = Path.Combine(libLouisDir, "liblouis.dll");
-        if (!FileExists(liblouisDll)) {
+        if (!Wrapper.FileExists(liblouisDll)) {
             return false;
         }
         string tablesDir = Path.Combine(libLouisDir, "tables");
-        if (!DirectoryExists(tablesDir)) {
+        if (!Wrapper.DirectoryExists(tablesDir)) {
             return false;
         }
 
@@ -466,29 +422,24 @@ this.useLogCallback = false;
             // Only the first name contains the full path !
             string shortName = Path.GetFileName(name);
             string fullPath = (Path.Combine(tablesDir, shortName));
-            if (!FileExists(fullPath)) {
+            if (!Wrapper.FileExists(fullPath)) {
                 return false;
             }
         }
-        Log(string.Format(": All tables in '{0}' were found", tableNames));
+
         return true;
     }
 
-    private bool disposed = false;
+    private bool disposed;
 
     public void Dispose() {
         if (!disposed) {
-            Free();                // Clear all tables
-            UnregisterCallback();  // Prevent callbacks to delegate belonging to this object
+            lou_free();                // Clear all tables
             disposed = true;       // Handles later async calls from the GC 
         }
     }
 
-    private static IClient? theClient = null;
-
-    public static Wrapper? Create(string tableNames, IClient? client) {
-        theClient = client; // Establish logging
-
+    public static Wrapper? Create(string tableNames) {
         Wrapper wrapper = new Wrapper(tableNames);
         bool ok = wrapper.CheckInstallation();
         return ok ? wrapper : null;

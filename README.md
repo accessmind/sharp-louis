@@ -23,22 +23,12 @@ The package includes the native LibLouis DLL and all translation tables, which a
 ```csharp
 using SharpLouis;
 
-// Implement IClient for logging (can be minimal)
-public class MyApp : IClient
+// Create wrapper with a translation table
+using var wrapper = Wrapper.Create("en-ueb-g1.ctb");
+
+if (wrapper != null && wrapper.TranslateString("Hello World", out string braille))
 {
-    public void OnWrapperLog(string message) => Console.WriteLine(message);
-    public void OnLibLouisLog(string message) => Console.WriteLine($"LibLouis: {message}");
-
-    public void TranslateToBraille()
-    {
-        // Create wrapper with a translation table
-        using var wrapper = Wrapper.Create("en-ueb-g1.ctb", this);
-
-        if (wrapper != null && wrapper.TranslateString("Hello World", out string braille))
-        {
-            Console.WriteLine(braille); // Outputs Unicode Braille
-        }
-    }
+    Console.WriteLine(braille); // Outputs Unicode Braille: ⠓⠑⠇⠇⠕⠀⠺⠕⠗⠇⠙
 }
 ```
 
@@ -55,7 +45,7 @@ However, to this time there was no publicly available open-source wrapper for .N
 Currently SharpLouis is only in the beginning of its life, so there are some known limitations.
 
 * For now, only Windows is supported as we provide LibLouis DLL and tables inside the package;
-* Currently we deliberately support only 64-bit systems;
+* Currently only 64-bit systems are supported (platform is restricted to x64 in the project file);
 * The DLL is built with UTF-32 support (see LibLouis documentation if you don’t know what we are talking about);
 * Translation tables are both bundled with the package and listed in a JSON file for displaying and filtering (see the section about translate table collection below). The utility that processes tables is called [LLJT](https://github.com/accessmind/liblouis-jsonify-tables) and is also open-source.
 * Translation mode is fixed to `TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput`, i.e., currently SharpLouis works only with Unicode Braille internally and no output for undefined characters is provided.
@@ -64,7 +54,7 @@ Currently SharpLouis is only in the beginning of its life, so there are some kno
 
 The main Wrapper class exposes several public methods, most of which are directly wrapped C API methods provided by LibLouis.
 
-* `static Wrapper Create(string tableNames, IClient loggingClient)` — Creates the wrapper that can be subsequently used. The first parameter, although stated in plural, is usually a single table name relative to the path where the translation tables are located, so usually it's something like `"en-ueb-g1.ctb"`. The logging client must implement two methods: `OnWrapperLog(string message)` and `OnLibLouisLog(string message)`. It's convenient to implement this interface in the class itself and set `this as IClient` as the second parameter to the `Create` method.
+* `static Wrapper Create(string tableNames)` — Creates the wrapper that can be subsequently used. The first parameter, although stated in plural, is usually a single table name relative to the path where the translation tables are located, so usually it's something like `"en-ueb-g1.ctb"`.
 * `bool CharsToDots(string chars, out string dots)` — Equivalent of the `Lou_CharToDots` function in LibLouis. Accepts characters as string and outputs dot patterns. for more details about this and all subsequent methods see [LibLouis documentation](https://liblouis.io/documentation/liblouis.html). All those methods return `true` on success and `false` on failure.
 * `bool DotsToChars(string dots, out string chars)` — Inverse of the previous methods. Accepts dots patterns and returns characters according to the translation table being used.
 * `bool TranslateString(string text, out string dots)` — Translates a string to Unicode Braille according to the translation table selected on Wrapper instantiation.
@@ -83,7 +73,7 @@ In SharpLouis, a translation table is represented by a `TranslationTable` struct
 * `TableType` — Type of Braille to translate. The values are defined in the BrailleTranslationTable/BrailleType struct. Currently can be one of literary, computer or math Braille.
 * `ContractionType` — Determines the level of contraction the table supports. The values are defined in the BrailleTranslationTable/ContractionType struct. Can be one of not contracted, partially contracted or fully contracted.
 * `Direction` — Translation direction supported by the table. The values are defined in BrailleTranslationTable/Direction struct. Can be one of forward, backward or both.
-* `DotsMode` — the "dotness" of the Braille supported by the table. The values are defined in BrailleTranslationTable/DotsMode struct. Can be either 8 (eight-dot Braille) or 6 (six-dot Braille).
+* `DotsMode` — the "dotness" of the Braille supported by the table. The values are defined in BrailleTranslationTable/BrailleMode struct. Can be either 8 (eight-dot Braille) or 6 (six-dot Braille).
 
 This struct also has some helper methods for filtering translation tables:
 * `bool IsLiteraryBraille()` — Returns `true` if the current table is a literary Braille table.
@@ -152,7 +142,7 @@ dotnet build SharpLouis.sln -c Release
 dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 ```
 
-The package will be created in the `Bin/` directory.
+The package will be created in the `Bin/Release/` directory.
 
 ### Project Structure
 
@@ -163,7 +153,18 @@ sharp-louis/
 │   └── SharpLouis/
 │       ├── SharpLouis.csproj   # Project file
 │       ├── Wrapper.cs          # Main wrapper class with P/Invoke
+│       ├── TableCollection.cs  # Fluent API for filtering tables
+│       ├── TranslationTable.cs # Translation table metadata
+│       ├── TranslationModes.cs # Translation mode flags
+│       ├── TypeForm.cs         # Typeform enum
+│       ├── NativeFunctions.cs  # Native function enum
+│       ├── BrailleTranslationTable/  # Metadata structures
+│       │   ├── BrailleContraction.cs
+│       │   ├── BrailleMode.cs
+│       │   ├── BrailleType.cs
+│       │   └── TranslationDirection.cs
 │       ├── build/              # MSBuild targets for NuGet consumers
+│       │   └── AccessMind.SharpLouis.targets
 │       └── LibLouis/
 │           ├── liblouis.dll    # Native library (Windows x64)
 │           ├── tables.json     # Table metadata

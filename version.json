@@ -2,7 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/dotnet/Nerdbank.GitVersioning/main/src/NerdBank.GitVersioning/version.schema.json",
   "version": "1.0.0",
   "assemblyVersion": {
-    "precision": "build"
+    "precision": "revision"
+  },
+  "nugetPackageVersion": {
+    "precision": "revision"
   },
   "gitCommitIdShortFixedLength": 0,
   "publicReleaseRefSpec": [

@@ -91,6 +91,7 @@ public class Wrapper: IDisposable {
  );
     #endregion
 
+    private static readonly char[] NullChars = ['\0'];
     TypeForm[] DummyTypeForms; // Dummy parameter
 
     public bool CharsToDots(string chars, out string dots) {
@@ -121,13 +122,13 @@ public class Wrapper: IDisposable {
         throw new NotImplementedException();
     }
 
-    private byte[] CreateOutputBuffer(int inBufLength) {
+    private static byte[] CreateOutputBuffer(int inBufLength) {
         int outputLength = Math.Max((inBufLength * 2), 1024);  // Always twice the inputbuffer size, but at least 1kB
         byte[] outBuf = new byte[outputLength];
         return outBuf;
     }
 
-    private TypeForm[] CreateTfeBuffer(int inputLength, NativeFunction nativeFunction, TypeForm[] tfeInput) {
+    private static TypeForm[] CreateTfeBuffer(int inputLength, NativeFunction nativeFunction, TypeForm[] tfeInput) {
         // Developer's note: By initializing "result" to TypeForm.Hex5c5c instead of the default TypeForm.plain_text (0x0000) it is easily verified
         // that lou_backTranslateString() when called with  "out TypeForm[] tfe" where tfe != null initializes the first half of the buffer to the value 0x3030
         // and leaves the last half of the buffer untouched.
@@ -144,8 +145,8 @@ public class Wrapper: IDisposable {
         return result;
     }
 
-    private int GetTfeLength(int inputLength, NativeFunction nativeFunction) {
-#warning TODO Find out why a smaller defaultBufferSize, for instance "defaultBufferSize =(inputLength * 2)" causes strange crashes !!
+    private static int GetTfeLength(int inputLength, NativeFunction nativeFunction) {
+        // TODO Find out why a smaller defaultBufferSize, for instance "defaultBufferSize =(inputLength * 2)" causes strange crashes !!
         int defaultTfeBufferSize = Math.Max(1024, (inputLength * 2)); // Twice as many Typeform items as input elements, but at least 1024
         switch (nativeFunction) {
             case NativeFunction.translateStringTfe:
@@ -180,8 +181,8 @@ public class Wrapper: IDisposable {
         int result = 0;
         // The following 3 buffers are owned by managed code and passed to native code. They are pinned by the "fixed" clause.
         byte[] inBuf = encoding.GetBytes(input);
-        byte[] outBuf = CreateOutputBuffer(inBuf.Length);
-        TypeForm[] tfeBuf = CreateTfeBuffer(input.Length, nativeFunction, tfeInput);
+        byte[] outBuf = Wrapper.CreateOutputBuffer(inBuf.Length);
+        TypeForm[] tfeBuf = Wrapper.CreateTfeBuffer(input.Length, nativeFunction, tfeInput);
         // The following 2 integers are owned by managed code and passed to native code. They don't need pinning, because they are simple stack-variables.
         int inputLength = input.Length;
         int outputLength = outBuf.Length;
@@ -231,10 +232,10 @@ public class Wrapper: IDisposable {
             return OnError("Output buffer is null");
         }
         if (result == 1 && OutputLengthIsKnown(nativeFunction) && outputLength == outBuf.Length) {
-            return OnLengthError(outputLength);
+            return Wrapper.OnLengthError(outputLength);
         }
         output = GetOutputString(nativeFunction, outBuf, outputLength, charSize);
-        tfeOutput = GetOutputTypeForms(nativeFunction, tfeBuf, outputLength);
+        tfeOutput = Wrapper.GetOutputTypeForms(nativeFunction, tfeBuf, outputLength);
         return true;
     }
 
@@ -254,12 +255,12 @@ public class Wrapper: IDisposable {
         } else {
             s = encoding.GetString(output); // The whole outputbuffer
         }
-        return s.TrimEnd(new char[] { '\0' }); // Remove all trailing null characters
+        return s.TrimEnd(NullChars); // Remove all trailing null characters
     }
 
-    private TypeForm[] GetOutputTypeForms(NativeFunction nativeFunction, TypeForm[] tfeBuf, int outputLength) {
+    private static TypeForm[] GetOutputTypeForms(NativeFunction nativeFunction, TypeForm[] tfeBuf, int outputLength) {
         if (!TfeMustBeCopied(nativeFunction)) {
-            return new TypeForm[0];
+            return Array.Empty<TypeForm>();
         }
         int length = OutputLengthIsKnown(nativeFunction) ? outputLength : 0;
         TypeForm[] result = new TypeForm[length];
@@ -267,7 +268,7 @@ public class Wrapper: IDisposable {
         return result;
     }
 
-    private bool OutputLengthIsKnown(NativeFunction nativeFunction) {
+    private static bool OutputLengthIsKnown(NativeFunction nativeFunction) {
         switch (nativeFunction) {
             case NativeFunction.translateString:
                 return true;
@@ -281,7 +282,7 @@ public class Wrapper: IDisposable {
         return false;
     }
 
-    private bool TfeMustBeCopied(NativeFunction nativeFunction) {
+    private static bool TfeMustBeCopied(NativeFunction nativeFunction) {
         switch (nativeFunction) {
             case NativeFunction.translateStringTfe:
                 return true;
@@ -291,7 +292,7 @@ public class Wrapper: IDisposable {
         return false;
     }
 
-    private string TfeToString(TypeForm[] tfe) {
+    private static string TfeToString(TypeForm[] tfe) {
         if (tfe is null) {
             return "null";
         }
@@ -306,7 +307,7 @@ public class Wrapper: IDisposable {
         return (string.Format("Length={0} HexValues={1}", tfe.Length, sb.ToString()));
     }
 
-    private void CheckPinning(string id, int pBefore, int pAfter) {
+    private static void CheckPinning(string id, int pBefore, int pAfter) {
         if (pBefore == pAfter) {
             return;
         }
@@ -314,19 +315,19 @@ public class Wrapper: IDisposable {
         throw new Exception(message);
     }
 
-    private bool OnLengthError(int outputLength) {
+    private static bool OnLengthError(int outputLength) {
         // According to footnote 2 in documentation:
         // "When the output buffer is not big enough, lou_translateString returns a partial translation that is more or less accurate
         // up until the returned inlen/outlen, and treats it as a successful translation, i.e. also returns 1."
         return OnError(string.Format(" Result=1 but output may have been truncated to {0} characters to fit size of outputbuffer", outputLength));
     }
 
-    private bool OnError(string s) {
+    private static bool OnError(string s) {
 
         return false;
     }
 
-    public void Free() {
+    public static void Free() {
         lou_free();
     }
 
@@ -377,7 +378,7 @@ public class Wrapper: IDisposable {
         this.tablePaths = string.Empty;
     }
 
-    public bool DirectoryExists(string path) {
+    private static bool DirectoryExists(string path) {
         if (Directory.Exists(path)) {
             return true;
         }
@@ -385,14 +386,14 @@ public class Wrapper: IDisposable {
         return OnMissingItem("Directory", path);
     }
 
-    private bool FileExists(string path) {
+    private static bool FileExists(string path) {
         if (File.Exists(path)) {
             return true;
         }
         return OnMissingItem("File", path);
     }
 
-    private bool OnMissingItem(string itemType, string path) {
+    private static bool OnMissingItem(string itemType, string path) {
 
         return false;
     }
@@ -404,15 +405,15 @@ public class Wrapper: IDisposable {
     private bool CheckInstallation() {
         string executingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
         string? libLouisDir = Path.Combine(executingDirectory, "LibLouis");
-        if (!DirectoryExists(libLouisDir)) {
+        if (!Wrapper.DirectoryExists(libLouisDir)) {
             return false;
         }
         string liblouisDll = Path.Combine(libLouisDir, "liblouis.dll");
-        if (!FileExists(liblouisDll)) {
+        if (!Wrapper.FileExists(liblouisDll)) {
             return false;
         }
         string tablesDir = Path.Combine(libLouisDir, "tables");
-        if (!DirectoryExists(tablesDir)) {
+        if (!Wrapper.DirectoryExists(tablesDir)) {
             return false;
         }
 
@@ -421,7 +422,7 @@ public class Wrapper: IDisposable {
             // Only the first name contains the full path !
             string shortName = Path.GetFileName(name);
             string fullPath = (Path.Combine(tablesDir, shortName));
-            if (!FileExists(fullPath)) {
+            if (!Wrapper.FileExists(fullPath)) {
                 return false;
             }
         }
@@ -429,11 +430,11 @@ public class Wrapper: IDisposable {
         return true;
     }
 
-    private bool disposed = false;
+    private bool disposed;
 
     public void Dispose() {
         if (!disposed) {
-            Free();                // Clear all tables
+            lou_free();                // Clear all tables
             disposed = true;       // Handles later async calls from the GC 
         }
     }

@@ -33,27 +33,27 @@ public readonly record struct TranslationTable(
     int DotsMode
         ) {
     public bool IsLiteraryBraille() {
-        return this.TableType.ToLower() == BrailleType.Literary;
+        return string.Equals(this.TableType, BrailleType.Literary, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsComputerBraille() {
-        return this.TableType.ToLower() == BrailleType.Computer;
+        return string.Equals(this.TableType, BrailleType.Computer, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsMathBraille() {
-        return this.TableType.ToLower() == BrailleType.Math;
+        return string.Equals(this.TableType, BrailleType.Math, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsUncontracted() {
-        return this.ContractionType.ToLower() == BrailleContraction.Uncontracted;
+        return string.Equals(this.ContractionType, BrailleContraction.Uncontracted, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsPartiallyContracted() {
-        return this.ContractionType.ToLower() == BrailleContraction.PartiallyContracted;
+        return string.Equals(this.ContractionType, BrailleContraction.PartiallyContracted, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsFullyContracted() {
-        return this.ContractionType.ToLower() == BrailleContraction.FullyContracted;
+        return string.Equals(this.ContractionType, BrailleContraction.FullyContracted, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool IsContracted() {
@@ -61,15 +61,15 @@ public readonly record struct TranslationTable(
     }
 
     public bool CanTranslate() {
-        return this.Direction.ToLower() == TranslationDirection.Forward || this.Direction.ToLower() == TranslationDirection.both;
+        return string.Equals(this.Direction, TranslationDirection.Forward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool CanBackTranslate() {
-        return this.Direction.ToLower() == TranslationDirection.Backward || this.Direction.ToLower() == TranslationDirection.both;
+        return string.Equals(this.Direction, TranslationDirection.Backward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool CanTranslateBothWays() {
-        return this.Direction.ToLower() == TranslationDirection.both;
+        return string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool isEightDot() {

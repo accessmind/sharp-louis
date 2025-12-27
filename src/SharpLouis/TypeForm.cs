@@ -14,7 +14,7 @@ namespace SharpLouis;
 /// 
 /// Corresponds to values defined in liblouis.h
 /// </summary>
-public enum TypeForm : int {
+public enum TypeForm: int {
     PlainText = 0x0000,
     Italic = 0x0001,
     Underline = 0x0002,

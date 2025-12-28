@@ -9,7 +9,7 @@ using System.Text;
 using Microsoft.SqlServer.Server;
 using static System.Net.Mime.MediaTypeNames;
 
-namespace SharpLouis;
+namespace AccessMind.SharpLouis;
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library

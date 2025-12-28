@@ -1,4 +1,4 @@
-﻿namespace SharpLouis.BrailleTranslationTable;
+﻿namespace AccessMind.SharpLouis.BrailleTranslationTable;
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library

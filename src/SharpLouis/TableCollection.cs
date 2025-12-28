@@ -5,9 +5,9 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
-using SharpLouis.BrailleTranslationTable;
+using AccessMind.SharpLouis.BrailleTranslationTable;
 
-namespace SharpLouis;
+namespace AccessMind.SharpLouis;
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library

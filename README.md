@@ -21,7 +21,7 @@ The package includes the native LibLouis DLL and all translation tables, which a
 ## Quick Start
 
 ```csharp
-using SharpLouis;
+using AccessMind.SharpLouis;
 
 // Create wrapper with a translation table
 using var wrapper = Wrapper.Create("en-ueb-g1.ctb");
@@ -58,7 +58,7 @@ The main Wrapper class exposes several public methods, most of which are directl
 * `bool CharsToDots(string chars, out string dots)` — Equivalent of the `Lou_CharToDots` function in LibLouis. Accepts characters as string and outputs dot patterns. for more details about this and all subsequent methods see [LibLouis documentation](https://liblouis.io/documentation/liblouis.html). All those methods return `true` on success and `false` on failure.
 * `bool DotsToChars(string dots, out string chars)` — Inverse of the previous methods. Accepts dots patterns and returns characters according to the translation table being used.
 * `bool TranslateString(string text, out string dots)` — Translates a string to Unicode Braille according to the translation table selected on Wrapper instantiation.
-* `bool TranslateStringWithTypeForms` — Translates a string with emphasis styles. Accepts an array of emphasis typeforms as members of the `TypeForm` enum. See LibLouis documentation for more info on this.
+* `bool TranslateStringWithTypeForms(string text, out string dots, in TypeForm[] typeForms)` — Translates a string with emphasis styles. Accepts an array of emphasis typeforms as members of the `TypeForm` enum. See LibLouis documentation for more info on this.
 * `bool BackTranslateString(string dots, out string text)` — Translates Braille representation back to text according to the translation table selected on Wrapper instantiation. Note! Not every table is capable of back-translating from Braille to text, see below on translation tables filtering.
 * `bool BackTranslateStringWithTypeForms(string dots, out string text, out TypeForm[] typeForms)` — Same but with emphasis typeforms.
 
@@ -71,9 +71,9 @@ In SharpLouis, a translation table is represented by a `TranslationTable` struct
 * `DisplayName` — A human-readable display name for using in user interfaces. Example: _Unified English uncontracted braille_
 * `Language` — The language of the table, usually as two-letter code. Example: _en_ for English
 * `TableType` — Type of Braille to translate. The values are defined in the BrailleTranslationTable/BrailleType struct. Currently can be one of literary, computer or math Braille.
-* `ContractionType` — Determines the level of contraction the table supports. The values are defined in the BrailleTranslationTable/ContractionType struct. Can be one of not contracted, partially contracted or fully contracted.
-* `Direction` — Translation direction supported by the table. The values are defined in BrailleTranslationTable/Direction struct. Can be one of forward, backward or both.
-* `DotsMode` — the "dotness" of the Braille supported by the table. The values are defined in BrailleTranslationTable/BrailleMode struct. Can be either 8 (eight-dot Braille) or 6 (six-dot Braille).
+* `ContractionType` — Determines the level of contraction the table supports. The values are defined in the `BrailleTranslationTable/BrailleContraction` struct. Can be one of not contracted, partially contracted or fully contracted. May be `null` when the table declares no contraction metadata (for example, computer Braille tables).
+* `Direction` — Translation direction supported by the table. The values are defined in the `BrailleTranslationTable/TranslationDirection` struct. Can be one of forward, backward or both. May be `null` when the table declares no direction metadata, in which case the table is treated as bidirectional.
+* `DotsMode` — the "dotness" of the Braille supported by the table. The values are defined in the `BrailleTranslationTable/BrailleMode` struct. Can be 8 (eight-dot Braille) or 6 (six-dot Braille), or 0 when the table declares no dots metadata.
 
 This struct also has some helper methods for filtering translation tables:
 * `bool IsLiteraryBraille()` — Returns `true` if the current table is a literary Braille table.
@@ -105,7 +105,7 @@ It has the following methods:
 * `TableCollection PopulateFromJson()` — Parses the JSON file provided with the library and returns a table collection instance populated from this file.
 * `TableCollection FindByLanguage(string language)` — Filters the table collection and finds all the tables of a given language.
 * `TableCollection FindLiterary()` — Filters the collection and finds all the translation tables supporting literary Braille.
-* `TranslationTable FindByFileName(string fileName)` — Accepts a file name and finds the corresponding translation table.
+* `TranslationTable? FindByFileName(string fileName)` — Accepts a file name and finds the corresponding translation table, or `null` if no table with that file name exists.
 * `Dictionary<string, string> ListLanguages()` — Searches all the tables and lists the languages supported by those tables. Returns a dictionary where the key of each element is a language code and the value is its full English name.
 
 ## Building from Source
@@ -142,7 +142,7 @@ dotnet build SharpLouis.sln -c Release
 dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 ```
 
-The package will be created in the `Bin/Release/` directory.
+The package will be created in the `src/SharpLouis/bin/Release/` directory.
 
 ### Project Structure
 

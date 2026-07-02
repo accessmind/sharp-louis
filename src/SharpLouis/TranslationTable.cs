@@ -2,19 +2,19 @@
 
 namespace AccessMind.SharpLouis;
 
+// SharpLouis, .NET wrapper for the LibLouis Braille Translator library
+// Copyright © 2024 AccessMind LLC.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// http://www.apache.org/licenses/LICENSE-2.0
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and limitations under the License.
+
 /// <summary>
-/// SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-/// Copyright © 2024 AccessMind LLC.
-/// Licensed under the Apache License, Version 2.0 (the "License");
-/// you may not use this file except in compliance with the License.
-/// You may obtain a copy of the License at
-/// http://www.apache.org/licenses/LICENSE-2.0
-/// Unless required by applicable law or agreed to in writing,
-/// software distributed under the License is distributed on an "AS IS" BASIS,
-/// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-/// See the License for the specific language governing permissions and limitations under the License.
-//////
-///Struct representing a Braille translation table
+/// Struct representing a Braille translation table.
 /// </summary>
 /// <param name="FileName">Translation table file name</param>
 /// <param name="DisplayName">Display name of the translation table</param>
@@ -27,9 +27,9 @@ public readonly record struct TranslationTable(
     string FileName,
     string DisplayName,
     string Language,
-    string TableType,
-    string ContractionType,
-    string Direction,
+    string? TableType,
+    string? ContractionType,
+    string? Direction,
     int DotsMode
         ) {
     public bool IsLiteraryBraille() {
@@ -61,18 +61,20 @@ public readonly record struct TranslationTable(
     }
 
     public bool CanTranslate() {
-        return string.Equals(this.Direction, TranslationDirection.Forward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
+        // In liblouis an absent "direction" field declares no restriction, so the table is usable
+        // both ways. Treat unspecified direction as translatable rather than misreporting it as false.
+        return this.Direction is null || string.Equals(this.Direction, TranslationDirection.Forward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.Both, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool CanBackTranslate() {
-        return string.Equals(this.Direction, TranslationDirection.Backward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
+        return this.Direction is null || string.Equals(this.Direction, TranslationDirection.Backward, StringComparison.OrdinalIgnoreCase) || string.Equals(this.Direction, TranslationDirection.Both, StringComparison.OrdinalIgnoreCase);
     }
 
     public bool CanTranslateBothWays() {
-        return string.Equals(this.Direction, TranslationDirection.both, StringComparison.OrdinalIgnoreCase);
+        return this.Direction is null || string.Equals(this.Direction, TranslationDirection.Both, StringComparison.OrdinalIgnoreCase);
     }
 
-    public bool isEightDot() {
+    public bool IsEightDot() {
         return this.DotsMode == BrailleMode.EightDot;
     }
 

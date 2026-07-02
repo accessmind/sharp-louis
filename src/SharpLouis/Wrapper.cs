@@ -1,13 +1,5 @@
-﻿using System;
-using System.ComponentModel;
-using System.Diagnostics.SymbolStore;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.SqlServer.Server;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace AccessMind.SharpLouis;
 
@@ -25,7 +17,7 @@ namespace AccessMind.SharpLouis;
 ///
 /// The main Wrapper class. Use <c>Wrapper.Create</c> to initialize the wrapper and start working with it
 /// </summary>
-public class Wrapper: IDisposable {
+public sealed class Wrapper: IDisposable {
     const int TranslationMode = (int)(TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput); // Common for all member functions
     const int BackTranslationMode = 0; // The "mode" parameter is deprecated during backtranslation and must be set to 0 !!
 
@@ -48,9 +40,10 @@ public class Wrapper: IDisposable {
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     private static extern int lou_charSize();
 
+    // Returns a pointer to a static string owned by liblouis. It must NOT be freed, so the return is
+    // marshalled as IntPtr (marshalling it directly as string would make the CLR free liblouis's memory).
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-    [return: MarshalAs(UnmanagedType.LPStr)]
-    private static extern string lou_version();
+    private static extern IntPtr lou_version();
 
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     private static extern int lou_charToDots(
@@ -78,11 +71,11 @@ public class Wrapper: IDisposable {
         [In][MarshalAs(UnmanagedType.LPStr)] string tableList, // const char *tableList
         [In] byte[] inbuf,                                     // const widechar *inbuf
         [In, Out] IntPtr inlen,                                // int *inlen
-        [Out] byte[] outbuf,                                   // widechar *outbuf 
-        [In, Out] IntPtr outlen,                               // int *outlen  
-        [In] TypeForm[] typeform,                          // formtype *typeform 
-        [MarshalAs(UnmanagedType.LPStr)] string spacing,       // char *spacing
-        int mode                                               //  int mode 
+        [Out] byte[] outbuf,                                   // widechar *outbuf
+        [In, Out] IntPtr outlen,                               // int *outlen
+        [In] TypeForm[]? typeform,                             // formtype *typeform (may be NULL)
+        [MarshalAs(UnmanagedType.LPStr)] string? spacing,      // char *spacing (may be NULL)
+        int mode                                               //  int mode
  );
 
     [DllImport(LibLouisDll, CharSet = CharSet.Unicode)]
@@ -90,11 +83,11 @@ public class Wrapper: IDisposable {
         [In][MarshalAs(UnmanagedType.LPStr)] string tableList, // const char *tableList
         [In] byte[] inbuf,                                     // const widechar *inbuf
         [In, Out] IntPtr inlen,                                // int *inlen
-        [Out] byte[] outbuf,                                   // widechar *outbuf 
-        [In, Out] IntPtr outlen,                               // int *outlen  
-        [In, Out] TypeForm[] typeform,                      // formtype *typeform 
-        [MarshalAs(UnmanagedType.LPStr)] string spacing,       // char *spacing
-        int mode                                               //  int mode 
+        [Out] byte[] outbuf,                                   // widechar *outbuf
+        [In, Out] IntPtr outlen,                               // int *outlen
+        [In, Out] TypeForm[]? typeform,                        // formtype *typeform (may be NULL)
+        [MarshalAs(UnmanagedType.LPStr)] string? spacing,      // char *spacing (may be NULL)
+        int mode                                               //  int mode
  );
     #endregion
 
@@ -125,8 +118,12 @@ public class Wrapper: IDisposable {
         return CommonNativeCall(NativeFunction.backTranslateStringTfe, dots, out text, [], out typeForms);
     }
 
-    public string GetVersion() {
-        throw new NotImplementedException();
+    /// <summary>
+    /// Gets the version string of the underlying native LibLouis library.
+    /// </summary>
+    /// <returns>The LibLouis version, for example <c>3.21.0</c>.</returns>
+    public static string GetVersion() {
+        return Marshal.PtrToStringAnsi(lou_version()) ?? string.Empty;
     }
 
     private static byte[] CreateOutputBuffer(int inBufLength) {
@@ -136,24 +133,16 @@ public class Wrapper: IDisposable {
     }
 
     private static TypeForm[] CreateTfeBuffer(int inputLength, NativeFunction nativeFunction, TypeForm[] tfeInput) {
-        // Developer's note: By initializing "result" to TypeForm.Hex5c5c instead of the default TypeForm.plain_text (0x0000) it is easily verified
-        // that lou_backTranslateString() when called with  "out TypeForm[] tfe" where tfe != null initializes the first half of the buffer to the value 0x3030
-        // and leaves the last half of the buffer untouched.
-        // This suggests some kind of mismatch between the managed code and the native code:  Maybe the native code attempts to initialize the whole buffer to 0x30 ?
-        // (The expected behavior would be to use only the values  plain_text = 0x0000, italic = 0x0001, underline = 0x0002 and  bold = 0x0004 )
+        // A freshly allocated TypeForm[] is all-zero, i.e. TypeForm.PlainText, which is the correct default.
         int length = GetTfeLength(inputLength, nativeFunction);
         TypeForm[] result = new TypeForm[length];
-        for (int i = 0; i < length; i++) {
-            result[i] = TypeForm.Hex5c5c;
-        } // For debugging only !
         if (tfeInput is not null && tfeInput.Length <= length) {
-            Array.Copy(tfeInput, result, tfeInput.Length); // Copy to the common buffer to be passed to native code
+            Array.Copy(tfeInput, result, tfeInput.Length); // Copy caller's typeforms into the buffer passed to native code
         }
         return result;
     }
 
     private static int GetTfeLength(int inputLength, NativeFunction nativeFunction) {
-        // TODO Find out why a smaller defaultBufferSize, for instance "defaultBufferSize =(inputLength * 2)" causes strange crashes !!
         int defaultTfeBufferSize = Math.Max(1024, (inputLength * 2)); // Twice as many Typeform items as input elements, but at least 1024
         switch (nativeFunction) {
             case NativeFunction.translateStringTfe:
@@ -192,7 +181,11 @@ public class Wrapper: IDisposable {
         TypeForm[] tfeBuf = Wrapper.CreateTfeBuffer(input.Length, nativeFunction, tfeInput);
         // The following 2 integers are owned by managed code and passed to native code. They don't need pinning, because they are simple stack-variables.
         int inputLength = input.Length;
-        int outputLength = outBuf.Length;
+        // liblouis expresses outlen as a count of widechar elements, not bytes. Report the buffer's
+        // capacity in widechars (bytes / charSize) so native code cannot write past the managed buffer.
+        // On return, native overwrites this with the actual number of widechars written.
+        int outputCapacity = outBuf.Length / charSize;
+        int outputLength = outputCapacity;
         unsafe {
             IntPtr inPtr = new IntPtr(&inputLength);
             IntPtr outPrt = new IntPtr(&outputLength);
@@ -208,24 +201,17 @@ public class Wrapper: IDisposable {
                             result = lou_dotsToChar(tablePaths, inBuf, outBuf, inputLength, BackTranslationMode);
                             break;
                         case NativeFunction.translateString:
-                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, [], string.Empty, TranslationMode);
+                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, null, null, TranslationMode);
                             break;
                         case NativeFunction.translateStringTfe:
-                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, String.Empty, TranslationMode);
+                            result = lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, null, TranslationMode);
                             break;
                         case NativeFunction.backTranslateString:
-                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, [], string.Empty, BackTranslationMode);
+                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, null, null, BackTranslationMode);
                             break;
                         case NativeFunction.backTranslateStringTfe:
-                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, string.Empty, BackTranslationMode);
+                            result = lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPrt, tfeBuf, null, BackTranslationMode);
                             break;
-                    }
-                    fixed (byte* pInBufAfter = inBuf, pOutBufAfter = outBuf) {
-                        CheckPinning("InBuf ", (int)pInBuf, (int)pInBufAfter);
-                        CheckPinning("OutBuf", (int)pOutBuf, (int)pOutBufAfter);
-                    }
-                    fixed (TypeForm* pTfeBufAfter = tfeBuf) {
-                        CheckPinning("TfeBuf ", (int)pTfeBuf, (int)pTfeBufAfter);
                     }
                 }
             }
@@ -238,7 +224,7 @@ public class Wrapper: IDisposable {
         if (outBuf is null) {
             return OnError("Output buffer is null");
         }
-        if (result == 1 && OutputLengthIsKnown(nativeFunction) && outputLength == outBuf.Length) {
+        if (result == 1 && OutputLengthIsKnown(nativeFunction) && outputLength == outputCapacity) {
             return Wrapper.OnLengthError(outputLength);
         }
         output = GetOutputString(nativeFunction, outBuf, outputLength, charSize);
@@ -299,29 +285,6 @@ public class Wrapper: IDisposable {
         return false;
     }
 
-    private static string TfeToString(TypeForm[] tfe) {
-        if (tfe is null) {
-            return "null";
-        }
-        StringBuilder sb = new StringBuilder();
-        foreach (TypeForm t in tfe) {
-            // When the buffer used for Typeform information in the call to native code is too small a crash seems to occur around here.
-            // For this reason we split up in small steps to illustrate that the crash has to do with the use of native code, not with this method!
-            int i = (int)t;
-            string s = String.Format("0x{0:x} ", i); // Format as HEX
-            sb.Append(s);
-        }
-        return (string.Format("Length={0} HexValues={1}", tfe.Length, sb.ToString()));
-    }
-
-    private static void CheckPinning(string id, int pBefore, int pAfter) {
-        if (pBefore == pAfter) {
-            return;
-        }
-        string message = string.Format(": The buffer '{0}' changed from {1} to {2} during call to native code - even if it was supposed to be pinned!", id, pBefore, pAfter);
-        throw new Exception(message);
-    }
-
     private static bool OnLengthError(int outputLength) {
         // According to footnote 2 in documentation:
         // "When the output buffer is not big enough, lou_translateString returns a partial translation that is more or less accurate
@@ -354,7 +317,7 @@ public class Wrapper: IDisposable {
     // Member variables:
     private readonly int charSize;
     private readonly Encoding encoding;
-    private string tablePaths;
+    private readonly string tablePaths;
 
     private readonly string tableNames;
 
@@ -373,16 +336,6 @@ public class Wrapper: IDisposable {
 
         tablePaths = Path.Combine(TablesFolder, tableNames); // According to the documentation only the first name needs to contain the tableBase !! 
 
-    }
-
-    /// <summary>
-    /// Prevent use of default constructor
-    /// </summary>
-    private Wrapper() {
-        this.DummyTypeForms = [];
-        this.encoding = GetEncoding(0);
-        this.tableNames = string.Empty;
-        this.tablePaths = string.Empty;
     }
 
     private static bool DirectoryExists(string path) {
@@ -445,7 +398,22 @@ public class Wrapper: IDisposable {
     }
 
     public static Wrapper? Create(string tableNames) {
-        Wrapper wrapper = new Wrapper(tableNames);
+        // Probe the native library before constructing: the constructor calls into liblouis
+        // (lou_charSize), so without this an absent or unloadable liblouis.dll would throw
+        // DllNotFoundException/BadImageFormatException instead of the documented graceful null.
+        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(Wrapper).Assembly, null, out _)) {
+            return null;
+        }
+
+        Wrapper wrapper;
+        try {
+            wrapper = new Wrapper(tableNames);
+        } catch (DllNotFoundException) {
+            return null;
+        } catch (BadImageFormatException) {
+            return null;
+        }
+
         bool ok = wrapper.CheckInstallation();
         return ok ? wrapper : null;
     }

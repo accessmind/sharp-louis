@@ -39,23 +39,22 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
   - `LibLouis/` - Native assets
     - `liblouis.dll` - Windows x64 native library
     - `tables.json` - Metadata for all translation tables
-    - `tables/` - 945+ Braille translation table files
+    - `tables/` - 400+ Braille translation table files (currently 424)
 
 ## Key Architecture Points
 
 ### Native Interop
-- P/Invoke declarations are in `Wrapper.cs` (lines 40-92)
-- DLL path is hardcoded as `LibLouis\liblouis.dll` relative to executing assembly
+- P/Invoke declarations are in the `#region DllImport` in `Wrapper.cs`
+- The native library is referenced by bare name (`liblouis`) and located by the standard .NET native-library resolver (shipped as a `runtimes/win-x64/native` NuGet asset); it is not a hard-coded path, so it works next to the exe and under single-file publish
 - Uses `CallingConvention.StdCall` with `CharSet.Unicode`
 - Requires `AllowUnsafeBlocks` for pointer operations
 
 ### NuGet Packaging
-- Current version: 1.0.1
+- The package version is derived from git tags by GitVersion (`GitVersion.yml`), not set in the csproj
 - Native DLL goes to `runtimes/win-x64/native/` in the package
 - Tables go to `content/LibLouis/` in the package
 - `build/AccessMind.SharpLouis.targets` copies files to consumer's output directory
 - Targets are included in both `build/` and `buildTransitive/` for transitive dependency support
-- Output paths use custom base paths: `Bin/` and `Obj/` at solution root
 
 ### Translation Tables
 - Tables are loaded from `LibLouis\tables\` relative to the DLL

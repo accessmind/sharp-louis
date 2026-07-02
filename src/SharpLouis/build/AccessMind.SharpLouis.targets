@@ -1,23 +1,22 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <!--
-    This targets file ensures that the LibLouis native DLL and tables are copied
-    to the correct location in the consuming project's output directory.
+    This targets file copies the LibLouis translation tables (data files) into the consuming
+    project's output directory. These are plain data files that LibLouis opens by path at runtime,
+    so they must ship loose on disk (they cannot be a runtimes/native asset and are not bundled into
+    a single-file exe). Keeping them as loose, user-replaceable files also satisfies the LGPL
+    obligation that the LibLouis tables remain modifiable/replaceable by the end user.
+
+    The native liblouis.dll is NOT handled here — it ships as a normal runtimes/win-x64/native NuGet
+    asset and is placed next to the consumer's exe by the SDK / resolved via deps.json, exactly like
+    any other native dependency. Wrapper.cs P/Invokes it by bare name ("liblouis").
 
     Expected output structure:
-      $(OutDir)/LibLouis/liblouis.dll
+      $(OutDir)/liblouis.dll            (from runtimes/win-x64/native, handled by the SDK)
       $(OutDir)/LibLouis/tables.json
       $(OutDir)/LibLouis/tables/*.ctb, *.utb, etc.
   -->
 
   <ItemGroup>
-    <!-- Native DLL -->
-    <None Include="$(MSBuildThisFileDirectory)../runtimes/win-x64/native/liblouis.dll"
-          Condition="Exists('$(MSBuildThisFileDirectory)../runtimes/win-x64/native/liblouis.dll')">
-      <Link>LibLouis/liblouis.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Visible>false</Visible>
-    </None>
-
     <!-- Tables metadata -->
     <None Include="$(MSBuildThisFileDirectory)../content/LibLouis/tables.json"
           Condition="Exists('$(MSBuildThisFileDirectory)../content/LibLouis/tables.json')">

@@ -30,12 +30,19 @@ public class Wrapper: IDisposable {
     const int BackTranslationMode = 0; // The "mode" parameter is deprecated during backtranslation and must be set to 0 !!
 
     /// <summary>
-    /// Path to be combined with tableName before passing to LibLouis
-    /// Must contain the path to the conversion tables, relative to the path of LibLouis.dll.
-    /// LibLouis.dll can find the exact absolute path to the tables using this information.
+    /// Absolute path to the folder holding the LibLouis translation tables, resolved against the
+    /// application base directory (single-file-publish safe). The first table name passed to LibLouis
+    /// is combined with this so LibLouis can locate the tables directory; subsequent tables and any
+    /// <c>include</c>d tables are then resolved by LibLouis relative to it.
     /// </summary>
-    private const string TablesFolder = @"LibLouis\tables";
-    private const string LibLouisDll = @"LibLouis\liblouis.dll";
+    private static readonly string TablesFolder = Path.Combine(AppContext.BaseDirectory, "LibLouis", "tables");
+
+    /// <summary>
+    /// The native LibLouis library, referenced by bare name so the standard .NET native-library
+    /// resolver finds it (shipped as a normal <c>runtimes/win-x64/native</c> NuGet asset, like any
+    /// other native dependency). No hard-coded path — works next to the exe and under single-file publish.
+    /// </summary>
+    private const string LibLouisDll = "liblouis";
 
     #region DllImport
     [DllImport(LibLouisDll, CallingConvention = CallingConvention.StdCall, CharSet = CharSet.Unicode)]
@@ -403,17 +410,15 @@ public class Wrapper: IDisposable {
     /// </summary>
     /// <returns></returns>
     private bool CheckInstallation() {
-        string executingDirectory = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? string.Empty;
-        string? libLouisDir = Path.Combine(executingDirectory, "LibLouis");
-        if (!Wrapper.DirectoryExists(libLouisDir)) {
-            return false;
+        // The native library is resolved by the standard .NET native-library resolver (bare name,
+        // shipped as a runtimes/win-x64/native asset). Probe it the same way DllImport would, so a
+        // missing/unloadable liblouis.dll yields a graceful null from Create() instead of a
+        // DllNotFoundException on the first translate call.
+        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(Wrapper).Assembly, null, out _)) {
+            return OnMissingItem("NativeLibrary", LibLouisDll);
         }
-        string liblouisDll = Path.Combine(libLouisDir, "liblouis.dll");
-        if (!Wrapper.FileExists(liblouisDll)) {
-            return false;
-        }
-        string tablesDir = Path.Combine(libLouisDir, "tables");
-        if (!Wrapper.DirectoryExists(tablesDir)) {
+
+        if (!Wrapper.DirectoryExists(TablesFolder)) {
             return false;
         }
 
@@ -421,7 +426,7 @@ public class Wrapper: IDisposable {
         foreach (string name in names) {
             // Only the first name contains the full path !
             string shortName = Path.GetFileName(name);
-            string fullPath = (Path.Combine(tablesDir, shortName));
+            string fullPath = Path.Combine(TablesFolder, shortName);
             if (!Wrapper.FileExists(fullPath)) {
                 return false;
             }

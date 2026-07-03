@@ -46,15 +46,16 @@ However, to this time there was no publicly available open-source wrapper for .N
 
 Currently SharpLouis is only in the beginning of its life, so there are some known limitations.
 
-* For now, only Windows is supported as we provide LibLouis DLL and tables inside the package;
+* For now, only Windows is supported as we provide LibLouis DLL and tables inside the package. The managed assembly targets plain `net10.0`, so a cross-platform project can reference it without a hard platform block, but any call into it will fail at runtime off Windows x64 (the compiler will also warn via `[SupportedOSPlatform("windows")]`);
 * Currently only 64-bit systems are supported (platform is restricted to x64 in the project file);
+* The bundled LibLouis native library is version 3.38. You can confirm the exact version at runtime with `Wrapper.GetVersion()`;
 * The DLL is built with UTF-32 support (see LibLouis documentation if you don’t know what we are talking about);
 * Translation tables are both bundled with the package and listed in a JSON file for displaying and filtering (see the section about translate table collection below). The utility that processes tables is called [LLJT](https://github.com/accessmind/liblouis-jsonify-tables) and is also open-source.
 * Translation mode is fixed to `TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput`, i.e., currently SharpLouis works only with Unicode Braille internally and no output for undefined characters is provided.
 
 ## The Wrapper
 
-The main Wrapper class exposes several public methods, most of which are directly wrapped C API methods provided by LibLouis.
+The main Wrapper class exposes several public methods, most of which are directly wrapped C API methods provided by LibLouis. Every wrapper serializes its native calls internally, so a single instance is safe to share across threads.
 
 * `static Wrapper Create(string tableNames)` — Creates the wrapper that can be subsequently used. The parameter, although stated in plural, is usually a single table name relative to the path where the translation tables are located, so usually it's something like `"en-ueb-g1.ctb"` (a comma-separated list is also accepted). The table is compiled up front, so a broken or missing table fails here rather than on the first translation: `Create` throws `ArgumentException`, `DllNotFoundException`, `FileNotFoundException`, or `LouisException` as appropriate. A wrapper owns no unmanaged resource, so it is cheap to create, thread-safe to share, and there is nothing to dispose.
 * `static bool TryCreate(string tableNames, out Wrapper? wrapper)` — Non-throwing form of `Create`: returns `false` (with `wrapper` set to `null`) instead of throwing when the native library, tables folder, or a requested table is unavailable. Useful for probing availability.
@@ -65,6 +66,7 @@ The main Wrapper class exposes several public methods, most of which are directl
 * `string BackTranslateString(string braille)` — Translates a Braille representation back to text according to the translation table selected on wrapper instantiation. Note! Not every table is capable of back-translating from Braille to text, see below on translation tables filtering.
 * `(string Text, TypeForm[] TypeForms) BackTranslateStringWithTypeForms(string braille)` — Same but also reports the per-character emphasis LibLouis inferred.
 * `static void ClearTableCache()` — Releases LibLouis's **process-global** cache of compiled tables (the native `lou_free`). This affects every wrapper in the process, not a single instance, and is normally unnecessary — the cache is cheap to keep and repopulates automatically on the next translation. Call it only to reclaim that memory or to force tables to be recompiled after their files change on disk.
+* `static string GetVersion()` — Returns the version string of the underlying native LibLouis library, for example `3.38.0`.
 
 ## Translation Tables
 
@@ -182,7 +184,7 @@ All contributions, big or small, are welcome! Please create an issue before subm
 
 ## License
 
-Copyright © 2024 [André Polykanine](https://github.com/Menelion), [AccessMind LLC.](https://accessmind.io/), and contributors.  
+Copyright © 2024–2026 [André Polykanine](https://github.com/Menelion), [AccessMind LLC.](https://accessmind.io/), and contributors.  
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.  
 You may obtain a copy of the License at [http://www.apache.org/licenses/LICENSE-2.0].  
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  

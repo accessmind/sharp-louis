@@ -1,5 +1,5 @@
 using AccessMind.SharpLouis;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace AccessMind.SharpLouis.Tests;

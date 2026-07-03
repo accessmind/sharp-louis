@@ -1,6 +1,6 @@
 using System.Linq;
 using AccessMind.SharpLouis;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace AccessMind.SharpLouis.Tests;
@@ -9,9 +9,7 @@ namespace AccessMind.SharpLouis.Tests;
 // test output). No native library is loaded here — this is pure JSON metadata handling.
 public class TableCollectionTests {
     private static TableCollection Populated() {
-        var collection = new TableCollection().PopulateFromJson();
-        collection.Should().NotBeNull();
-        return collection!;
+        return new TableCollection().PopulateFromJson();
     }
 
     [Fact]

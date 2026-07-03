@@ -2,7 +2,7 @@ namespace AccessMind.SharpLouis;
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-/// Copyright © 2024 AccessMind LLC.
+/// Copyright © 2024–2026 AccessMind LLC.
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
 /// You may obtain a copy of the License at

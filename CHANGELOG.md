@@ -2,15 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - Unreleased
+
+This release contains several breaking API changes (see **Changed** below), so it is a major version
+bump from 1.1.0.
 
 ### Fixed 🐛
 
 - Fixed native buffer handling in `TranslateString`/`BackTranslateString` that could corrupt memory or crash with an `AccessViolationException` on longer inputs: the output length is now passed to LibLouis as a count of `widechar` elements rather than bytes, and the unused `typeform`/`spacing` arguments are now passed as `NULL` instead of empty buffers.
-- `Wrapper.Create()` now reliably returns `null` when the native `liblouis` library is missing or cannot be loaded, instead of throwing.
 - `Wrapper.GetVersion()` now returns the native LibLouis version instead of throwing `NotImplementedException` (and no longer frees LibLouis-owned memory).
+- `Wrapper.Create()` now validates each requested table by its bundled file name only and hands LibLouis exactly the names it validated, so a rooted or relative path can no longer bypass the bundled-table check, and stray whitespace in a comma-separated list no longer passes validation only to fail inside LibLouis.
+- The native `liblouis` load probe in `Wrapper.Create()` now releases its load reference, so repeated wrapper creation no longer leaks a module reference.
 - `TableCollection` now resolves `tables.json` against the application base directory, so it works regardless of the current working directory.
 - `TableCollection.ListLanguages()` no longer throws when a table uses a language code that is not a recognized .NET culture (for example `awa` or `cop`).
 - `TableCollection.FindByFileName()` now returns `TranslationTable?` and yields `null` on a miss instead of a default-initialized struct.
@@ -44,18 +49,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Renamed `TranslationTable.isEightDot()` to `IsEightDot()` and `TranslationDirection.both` to `TranslationDirection.Both` for naming consistency (breaking change).
 - Removed debug-only scaffolding from the public surface and internals (the `TypeForm.Hex5c5c` member, buffer-pinning checks, and diagnostic helpers).
 - The package now ships XML documentation and a symbol package, and enables SourceLink and deterministic builds.
+- Updated the bundled LibLouis native library and translation tables to LibLouis 3.38.
 
 ### Added ✨
 
 - Added an xUnit test suite (`tests/SharpLouis.Tests`) covering end-to-end native translation,
   table-collection filtering, metadata predicates, and the enum ABI values.
 
-## [1.0.1]
+## [1.1.0] - 2025-12-27
 
 ### Fixed 🐛
 
-- [Fix LibLouis bundling](https://github.com/accessmind/sharp-louis/pull/1)
+- Corrected how the native library and translation tables are delivered to consumers, via
+  [Fix LibLouis bundling](https://github.com/accessmind/sharp-louis/pull/1) and
+  [Fix LibLouis NuGet package DLL placement](https://github.com/accessmind/sharp-louis/pull/4).
 
-## [1.0.0]
+## [1.0.0] - 2024-06-04
 
 - Initial release.
+
+[2.0.0]: https://github.com/accessmind/sharp-louis/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/accessmind/sharp-louis/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/accessmind/sharp-louis/releases/tag/v1.0.0

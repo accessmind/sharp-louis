@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using AccessMind.SharpLouis;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace AccessMind.SharpLouis.Tests;

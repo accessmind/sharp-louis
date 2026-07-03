@@ -42,7 +42,7 @@ dotnet test SharpLouis.sln
   - `LibLouis/` - Native assets
     - `liblouis.dll` - Windows x64 native library
     - `tables.json` - Metadata for all translation tables
-    - `tables/` - 400+ Braille translation table files (currently 424)
+    - `tables/` - 400+ Braille translation table files (currently 472)
 - `tests/SharpLouis.Tests/` - xUnit test project (`net10.0-windows`)
   - `WrapperTests.cs` - End-to-end translation tests against the real native `liblouis.dll`
   - `TableCollectionTests.cs` - `tables.json` parsing and fluent filtering

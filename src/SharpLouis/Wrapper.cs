@@ -7,7 +7,7 @@ namespace AccessMind.SharpLouis;
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-/// Copyright © 2024 AccessMind LLC.
+/// Copyright © 2024–2026 AccessMind LLC.
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
 /// You may obtain a copy of the License at
@@ -137,24 +137,30 @@ public sealed class Wrapper {
     private readonly string tablePaths;
 
     /// <summary>Private constructor. Use <see cref="Create"/> / <see cref="TryCreate"/> from the outside.</summary>
-    private Wrapper(string tableNames) {
+    /// <param name="tableNames">The table list exactly as the caller gave it; kept only for messages.</param>
+    /// <param name="normalizedNames">
+    /// The comma-separated list of bundled base file names <see cref="Create"/> has already validated.
+    /// This is the form actually handed to LibLouis, so it must contain no directory or rooted path.
+    /// </param>
+    private Wrapper(string tableNames, string normalizedNames) {
         this.tableNames = tableNames;
         // Prefix the (ASCII-safe) tables folder onto the list. Per LibLouis, only the first name needs
-        // the folder; the rest of the list and any included tables resolve relative to it.
-        this.tablePaths = Path.Combine(AsciiTablesFolder, tableNames);
+        // the folder; the rest of the list and any included tables resolve relative to it. The names are
+        // already reduced to bundled base file names, so no rooted path or '..' segment can leak through.
+        this.tablePaths = Path.Combine(AsciiTablesFolder, normalizedNames);
     }
 
     /// <summary>
     /// Translates print text to a dot-pattern string (LibLouis <c>lou_charToDots</c>), one cell per
     /// input character.
     /// </summary>
-    public string CharsToDots(string chars) => InvokeNative(NativeFunction.charsToDots, chars, [], out _);
+    public string CharsToDots(string chars) => InvokeNative(NativeFunction.CharsToDots, chars, [], out _);
 
     /// <summary>Inverse of <see cref="CharsToDots"/> (LibLouis <c>lou_dotsToChar</c>).</summary>
-    public string DotsToChars(string dots) => InvokeNative(NativeFunction.dotsToChars, dots, [], out _);
+    public string DotsToChars(string dots) => InvokeNative(NativeFunction.DotsToChars, dots, [], out _);
 
     /// <summary>Translates text to Unicode Braille using the wrapper's table(s).</summary>
-    public string TranslateString(string text) => InvokeNative(NativeFunction.translateString, text, [], out _);
+    public string TranslateString(string text) => InvokeNative(NativeFunction.TranslateString, text, [], out _);
 
     /// <summary>
     /// Translates text to Unicode Braille applying per-character emphasis. <paramref name="typeForms"/>
@@ -162,18 +168,18 @@ public sealed class Wrapper {
     /// </summary>
     public string TranslateStringWithTypeForms(string text, TypeForm[] typeForms) {
         ArgumentNullException.ThrowIfNull(typeForms);
-        return InvokeNative(NativeFunction.translateStringTfe, text, typeForms, out _);
+        return InvokeNative(NativeFunction.TranslateStringTfe, text, typeForms, out _);
     }
 
     /// <summary>Translates Unicode Braille back to text using the wrapper's table(s).</summary>
-    public string BackTranslateString(string braille) => InvokeNative(NativeFunction.backTranslateString, braille, [], out _);
+    public string BackTranslateString(string braille) => InvokeNative(NativeFunction.BackTranslateString, braille, [], out _);
 
     /// <summary>
     /// Back-translates Unicode Braille to text and reports the per-character emphasis LibLouis inferred.
     /// </summary>
     /// <returns>The recovered text and a typeform array indexed like that text.</returns>
     public (string Text, TypeForm[] TypeForms) BackTranslateStringWithTypeForms(string braille) {
-        string text = InvokeNative(NativeFunction.backTranslateStringTfe, braille, [], out TypeForm[] typeForms);
+        string text = InvokeNative(NativeFunction.BackTranslateStringTfe, braille, [], out TypeForm[] typeForms);
         return (text, typeForms);
     }
 
@@ -217,27 +223,42 @@ public sealed class Wrapper {
 
         // Probe the native library the same way DllImport would, so an absent/unloadable liblouis.dll
         // fails with a clear message instead of a first-call DllNotFoundException/BadImageFormatException.
-        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(Wrapper).Assembly, null, out _)) {
+        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(Wrapper).Assembly, null, out IntPtr libHandle)) {
             throw new DllNotFoundException(
                 $"The native '{LibLouisDll}' library could not be loaded. SharpLouis ships it for Windows x64; " +
                 "ensure the native asset is present next to your application.");
         }
 
+        // A successful probe adds a load reference. Release it so repeated Create calls don't leak the
+        // module: DllImport keeps its own reference for the actual P/Invoke calls, so liblouis stays loaded.
+        NativeLibrary.Free(libHandle);
+
         if (!Directory.Exists(TablesFolder)) {
             throw new DirectoryNotFoundException($"LibLouis tables folder not found: {TablesFolder}");
         }
 
+        // Only bundled tables are supported. Reduce each entry to its base file name (dropping any
+        // directory, rooted path or '..' segment) and require that exact file in the tables folder. The
+        // very same normalized names are what we hand to LibLouis below, so the managed validation and the
+        // native call can never disagree — a rooted or '..' path can no longer bypass the check, and stray
+        // whitespace can no longer pass validation only to fail inside LibLouis.
+        var shortNames = new List<string>();
         foreach (string name in tableNames.Split(',')) {
-            // Only the first name may carry a path; compare by file name against the tables folder.
             string shortName = Path.GetFileName(name.Trim());
+            if (shortName.Length == 0) {
+                throw new ArgumentException($"Empty table name in list '{tableNames}'.", nameof(tableNames));
+            }
+
             string fullPath = Path.Combine(TablesFolder, shortName);
             if (!File.Exists(fullPath)) {
                 throw new FileNotFoundException($"Translation table not found: {shortName}", fullPath);
             }
+
+            shortNames.Add(shortName);
         }
 
         EnsureNativeInfo();
-        var wrapper = new Wrapper(tableNames);
+        var wrapper = new Wrapper(tableNames, string.Join(",", shortNames));
 
         // Compile + cache the table now: fail fast on a broken table, and keep the first real
         // translation as fast as the rest.
@@ -344,12 +365,12 @@ public sealed class Wrapper {
                     fixed (byte* pInBuf = inBuf, pOutBuf = outBuf)  // Prevent the GC from moving the buffers
                     fixed (TypeForm* pTfeBuf = tfeBuf) {            // during the native call.
                         result = nativeFunction switch {
-                            NativeFunction.charsToDots => lou_charToDots(tablePaths, inBuf, outBuf, inputLength, TranslationMode),
-                            NativeFunction.dotsToChars => lou_dotsToChar(tablePaths, inBuf, outBuf, inputLength, BackTranslationMode),
-                            NativeFunction.translateString => lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPtr, null, null, TranslationMode),
-                            NativeFunction.translateStringTfe => lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPtr, tfeBuf, null, TranslationMode),
-                            NativeFunction.backTranslateString => lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPtr, null, null, BackTranslationMode),
-                            NativeFunction.backTranslateStringTfe => lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPtr, tfeBuf, null, BackTranslationMode),
+                            NativeFunction.CharsToDots => lou_charToDots(tablePaths, inBuf, outBuf, inputLength, TranslationMode),
+                            NativeFunction.DotsToChars => lou_dotsToChar(tablePaths, inBuf, outBuf, inputLength, BackTranslationMode),
+                            NativeFunction.TranslateString => lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPtr, null, null, TranslationMode),
+                            NativeFunction.TranslateStringTfe => lou_translateString(tablePaths, inBuf, inPtr, outBuf, outPtr, tfeBuf, null, TranslationMode),
+                            NativeFunction.BackTranslateString => lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPtr, null, null, BackTranslationMode),
+                            NativeFunction.BackTranslateStringTfe => lou_backTranslateString(tablePaths, inBuf, inPtr, outBuf, outPtr, tfeBuf, null, BackTranslationMode),
                             _ => 0,
                         };
                     }
@@ -397,15 +418,15 @@ public sealed class Wrapper {
     }
 
     private static bool OutputLengthIsKnown(NativeFunction nativeFunction) => nativeFunction switch {
-        NativeFunction.translateString => true,
-        NativeFunction.translateStringTfe => true,
-        NativeFunction.backTranslateString => true,
-        NativeFunction.backTranslateStringTfe => true,
+        NativeFunction.TranslateString => true,
+        NativeFunction.TranslateStringTfe => true,
+        NativeFunction.BackTranslateString => true,
+        NativeFunction.BackTranslateStringTfe => true,
         _ => false,
     };
 
     private static bool UsesTypeForms(NativeFunction nativeFunction) =>
-        nativeFunction is NativeFunction.translateStringTfe or NativeFunction.backTranslateStringTfe;
+        nativeFunction is NativeFunction.TranslateStringTfe or NativeFunction.BackTranslateStringTfe;
 
     /// <summary>
     /// Gets the encoding based on the character size from LibLouis.

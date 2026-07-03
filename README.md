@@ -23,14 +23,16 @@ The package includes the native LibLouis DLL and all translation tables, which a
 ```csharp
 using AccessMind.SharpLouis;
 
-// Create wrapper with a translation table
-using var wrapper = Wrapper.Create("en-ueb-g1.ctb");
+// Create a wrapper for a translation table. It owns no unmanaged resource, so there is
+// nothing to dispose — just create one and use it. Create throws a descriptive exception
+// if the native library or the table is missing (use Wrapper.TryCreate for a non-throwing probe).
+var wrapper = Wrapper.Create("en-ueb-g1.ctb");
 
-if (wrapper != null && wrapper.TranslateString("Hello World", out string braille))
-{
-    Console.WriteLine(braille); // Outputs Unicode Braille: ⠓⠑⠇⠇⠕⠀⠺⠕⠗⠇⠙
-}
+string braille = wrapper.TranslateString("Hello World");
+Console.WriteLine(braille); // Outputs Unicode Braille: ⠠⠓⠑⠇⠇⠕⠀⠠⠺⠕⠗⠇⠙
 ```
+
+A wrapper is cheap and thread-safe: create as many as you like (one per table), share them across threads, and keep them for the lifetime of your app.
 
 ## What Is It?
 
@@ -54,13 +56,15 @@ Currently SharpLouis is only in the beginning of its life, so there are some kno
 
 The main Wrapper class exposes several public methods, most of which are directly wrapped C API methods provided by LibLouis.
 
-* `static Wrapper Create(string tableNames)` — Creates the wrapper that can be subsequently used. The first parameter, although stated in plural, is usually a single table name relative to the path where the translation tables are located, so usually it's something like `"en-ueb-g1.ctb"`.
-* `bool CharsToDots(string chars, out string dots)` — Equivalent of the `Lou_CharToDots` function in LibLouis. Accepts characters as string and outputs dot patterns. for more details about this and all subsequent methods see [LibLouis documentation](https://liblouis.io/documentation/liblouis.html). All those methods return `true` on success and `false` on failure.
-* `bool DotsToChars(string dots, out string chars)` — Inverse of the previous methods. Accepts dots patterns and returns characters according to the translation table being used.
-* `bool TranslateString(string text, out string dots)` — Translates a string to Unicode Braille according to the translation table selected on Wrapper instantiation.
-* `bool TranslateStringWithTypeForms(string text, out string dots, in TypeForm[] typeForms)` — Translates a string with emphasis styles. Accepts an array of emphasis typeforms as members of the `TypeForm` enum. See LibLouis documentation for more info on this.
-* `bool BackTranslateString(string dots, out string text)` — Translates Braille representation back to text according to the translation table selected on Wrapper instantiation. Note! Not every table is capable of back-translating from Braille to text, see below on translation tables filtering.
-* `bool BackTranslateStringWithTypeForms(string dots, out string text, out TypeForm[] typeForms)` — Same but with emphasis typeforms.
+* `static Wrapper Create(string tableNames)` — Creates the wrapper that can be subsequently used. The parameter, although stated in plural, is usually a single table name relative to the path where the translation tables are located, so usually it's something like `"en-ueb-g1.ctb"` (a comma-separated list is also accepted). The table is compiled up front, so a broken or missing table fails here rather than on the first translation: `Create` throws `ArgumentException`, `DllNotFoundException`, `FileNotFoundException`, or `LouisException` as appropriate. A wrapper owns no unmanaged resource, so it is cheap to create, thread-safe to share, and there is nothing to dispose.
+* `static bool TryCreate(string tableNames, out Wrapper? wrapper)` — Non-throwing form of `Create`: returns `false` (with `wrapper` set to `null`) instead of throwing when the native library, tables folder, or a requested table is unavailable. Useful for probing availability.
+* `string CharsToDots(string chars)` — Equivalent of the `lou_charToDots` function in LibLouis. Accepts characters as a string and returns the corresponding dot patterns. For more details about this and all subsequent methods see the [LibLouis documentation](https://liblouis.io/documentation/liblouis.html). These methods return the result string and throw `LouisException` if the native call fails.
+* `string DotsToChars(string dots)` — Inverse of the previous method. Accepts dot patterns and returns characters according to the translation table being used.
+* `string TranslateString(string text)` — Translates a string to Unicode Braille according to the translation table selected on wrapper instantiation.
+* `string TranslateStringWithTypeForms(string text, TypeForm[] typeForms)` — Translates a string with emphasis styles. Accepts an array of emphasis typeforms as members of the `TypeForm` enum, indexed like `text`. See the LibLouis documentation for more info on this.
+* `string BackTranslateString(string braille)` — Translates a Braille representation back to text according to the translation table selected on wrapper instantiation. Note! Not every table is capable of back-translating from Braille to text, see below on translation tables filtering.
+* `(string Text, TypeForm[] TypeForms) BackTranslateStringWithTypeForms(string braille)` — Same but also reports the per-character emphasis LibLouis inferred.
+* `static void ClearTableCache()` — Releases LibLouis's **process-global** cache of compiled tables (the native `lou_free`). This affects every wrapper in the process, not a single instance, and is normally unnecessary — the cache is cheap to keep and repopulates automatically on the next translation. Call it only to reclaim that memory or to force tables to be recompiled after their files change on disk.
 
 ## Translation Tables
 
@@ -112,7 +116,7 @@ It has the following methods:
 
 ### Prerequisites
 
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- [.NET 10.0 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) or later
 - Windows x64 (currently the only supported platform)
 
 ### Clone and Build

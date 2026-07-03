@@ -17,6 +17,9 @@ dotnet build SharpLouis.sln -c Release
 
 # Create NuGet package
 dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
+
+# Run the test suite
+dotnet test SharpLouis.sln
 ```
 
 ## Project Structure
@@ -40,6 +43,13 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
     - `liblouis.dll` - Windows x64 native library
     - `tables.json` - Metadata for all translation tables
     - `tables/` - 400+ Braille translation table files (currently 424)
+- `tests/SharpLouis.Tests/` - xUnit test project (`net10.0-windows`)
+  - `WrapperTests.cs` - End-to-end translation tests against the real native `liblouis.dll`
+  - `TableCollectionTests.cs` - `tables.json` parsing and fluent filtering
+  - `TranslationTableTests.cs` - Pure metadata-predicate logic
+  - `EnumTests.cs` - Guards `TranslationModes`/`TypeForm` values against `liblouis.h`
+  - The `.csproj` copies `liblouis.dll` (to output root) and `LibLouis/` tables into the test
+    output so the wrapper resolves them exactly as a real consumer would
 
 ## Key Architecture Points
 
@@ -74,4 +84,8 @@ dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 - C# latest language version
 - Nullable reference types enabled
 - Implicit usings enabled
-- .NET 8.0 target framework
+- .NET 10.0 target framework (plain `net10.0`, so any net10.0 consumer can reference it). The
+  Windows-only native dependency is expressed via the `runtimes/win-x64/native` NuGet asset and an
+  assembly-level `[SupportedOSPlatform("windows")]` (see `AssemblyInfo.cs`), which gives cross-platform
+  callers a CA1416 hint rather than a hard reference block. The test project stays `net10.0-windows`
+  because it exercises the native library and only runs on Windows.

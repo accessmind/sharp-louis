@@ -18,6 +18,24 @@
     "DotsMode": 0
   },
   {
+    "FileName": "akk-borger.utb",
+    "DisplayName": "Akkadian braille according to Borger system",
+    "Language": "akk",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
+    "FileName": "akk.utb",
+    "DisplayName": "Akkadian braille according to U.S. system",
+    "Language": "akk",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
     "FileName": "ar-ar-comp8.utb",
     "DisplayName": "Arabic computer braille",
     "Language": "ar",
@@ -189,6 +207,15 @@
     "DotsMode": 8
   },
   {
+    "FileName": "cop.utb",
+    "DisplayName": "Coptic braille",
+    "Language": "cop",
+    "TableType": "literary",
+    "ContractionType": null,
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
     "FileName": "cs-comp8.utb",
     "DisplayName": "Czech computer braille",
     "Language": "cs",
@@ -205,6 +232,24 @@
     "ContractionType": null,
     "Direction": "forward",
     "DotsMode": 0
+  },
+  {
+    "FileName": "cuneiform-transliterated-compact.utb",
+    "DisplayName": "Transliterated Cuneiform braille with compact diacritics",
+    "Language": "akk-Latn",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
+    "FileName": "cuneiform-transliterated.utb",
+    "DisplayName": "Transliterated Cuneiform braille",
+    "Language": "akk-Latn",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
+    "DotsMode": 6
   },
   {
     "FileName": "cy-cy-g1.utb",
@@ -594,7 +639,16 @@
     "DotsMode": 0
   },
   {
-    "FileName": "et.tbl",
+    "FileName": "et-6dot.utb",
+    "DisplayName": "Estonian braille",
+    "Language": "et",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "et-g0.utb",
     "DisplayName": "Estonian computer braille",
     "Language": "et",
     "TableType": "computer",
@@ -720,8 +774,17 @@
     "DotsMode": 0
   },
   {
+    "FileName": "grc-international-en-composed.utb",
+    "DisplayName": "Greek internationalized braille with single-cell accented letters as used by English speakers",
+    "Language": "grc",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
     "FileName": "grc-international-en.utb",
-    "DisplayName": "Greek internationalized braille as used by English speakers",
+    "DisplayName": "Greek internationalized braille with 2-cell accented letters as used by English speakers",
     "Language": "grc",
     "TableType": "literary",
     "ContractionType": "no",
@@ -745,6 +808,33 @@
     "ContractionType": "no",
     "Direction": null,
     "DotsMode": 0
+  },
+  {
+    "FileName": "hbo-cantillated.utb",
+    "DisplayName": "Classical Hebrew braille with full cantillation",
+    "Language": "hbo",
+    "TableType": "literary",
+    "ContractionType": "partial",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
+    "FileName": "hbo-slim.utb",
+    "DisplayName": "Classical Hebrew braille without shewa or dagesh",
+    "Language": "hbo",
+    "TableType": "literary",
+    "ContractionType": "partial",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
+    "FileName": "hbo.utb",
+    "DisplayName": "Classical Hebrew braille according to International Hebrew Braille Code",
+    "Language": "hbo",
+    "TableType": "literary",
+    "ContractionType": "partial",
+    "Direction": null,
+    "DotsMode": 6
   },
   {
     "FileName": "he-IL-comp8.utb",
@@ -801,20 +891,20 @@
     "DotsMode": 8
   },
   {
+    "FileName": "hu-hu-g1.ctb",
+    "DisplayName": "Hungarian uncontracted braille",
+    "Language": "hu",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 0
+  },
+  {
     "FileName": "hu-hu-g2.ctb",
     "DisplayName": "Hungarian contracted braille",
     "Language": "hu",
     "TableType": "literary",
     "ContractionType": "full",
-    "Direction": "both",
-    "DotsMode": 0
-  },
-  {
-    "FileName": "hu.tbl",
-    "DisplayName": "Hungarian partially contracted braille",
-    "Language": "hu",
-    "TableType": "literary",
-    "ContractionType": "partial",
     "Direction": "both",
     "DotsMode": 0
   },
@@ -828,12 +918,30 @@
     "DotsMode": 8
   },
   {
+    "FileName": "IPA.utb",
+    "DisplayName": "International Phonetic Alphabet braille",
+    "Language": "*-fonipa",
+    "TableType": null,
+    "ContractionType": null,
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
     "FileName": "is.tbl",
     "DisplayName": "Icelandic braille",
     "Language": "is",
     "TableType": "literary",
     "ContractionType": null,
     "Direction": null,
+    "DotsMode": 6
+  },
+  {
+    "FileName": "it-it-comp6.utb",
+    "DisplayName": "Italian braille",
+    "Language": "it",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
     "DotsMode": 6
   },
   {
@@ -846,15 +954,6 @@
     "DotsMode": 8
   },
   {
-    "FileName": "it.tbl",
-    "DisplayName": "Italian braille",
-    "Language": "it",
-    "TableType": "literary",
-    "ContractionType": null,
-    "Direction": null,
-    "DotsMode": 6
-  },
-  {
     "FileName": "iu-ca-g1.ctb",
     "DisplayName": "Inuktitut braille",
     "Language": "iu",
@@ -864,6 +963,15 @@
     "DotsMode": 6
   },
   {
+    "FileName": "ja-kantenji-ucs2.utb",
+    "DisplayName": "Kantenji",
+    "Language": "ja",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "forward",
+    "DotsMode": 8
+  },
+  {
     "FileName": "ja-kantenji.utb",
     "DisplayName": "Kantenji",
     "Language": "ja",
@@ -871,6 +979,15 @@
     "ContractionType": "no",
     "Direction": "forward",
     "DotsMode": 8
+  },
+  {
+    "FileName": "ja-rokutenkanji.utb",
+    "DisplayName": "Rokuten Kanji",
+    "Language": "ja",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
   },
   {
     "FileName": "ka.utb",
@@ -999,7 +1116,7 @@
     "DotsMode": 6
   },
   {
-    "FileName": "lt-6dot.tbl",
+    "FileName": "lt-6dot.utb",
     "DisplayName": "Lithuanian 6-dot braille",
     "Language": "lt",
     "TableType": "literary",
@@ -1008,11 +1125,11 @@
     "DotsMode": 6
   },
   {
-    "FileName": "lt.tbl",
+    "FileName": "lt-8dot.utb",
     "DisplayName": "Lithuanian 8-dot braille",
     "Language": "lt",
     "TableType": "literary",
-    "ContractionType": "no",
+    "ContractionType": null,
     "Direction": "both",
     "DotsMode": 8
   },
@@ -1033,6 +1150,15 @@
     "ContractionType": "no",
     "Direction": null,
     "DotsMode": 0
+  },
+  {
+    "FileName": "mk-g1.utb",
+    "DisplayName": "Macedonian braille",
+    "Language": "mk",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
   },
   {
     "FileName": "ml.tbl",
@@ -1152,7 +1278,7 @@
     "DotsMode": 8
   },
   {
-    "FileName": "nl.tbl",
+    "FileName": "nl-NL-g0.utb",
     "DisplayName": "Dutch braille",
     "Language": "nl",
     "TableType": "literary",
@@ -1260,6 +1386,24 @@
     "DotsMode": 0
   },
   {
+    "FileName": "ovd-6g0.utb",
+    "DisplayName": "Elfdalian 6-dot braille",
+    "Language": "ovd",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "ovd-8g0.utb",
+    "DisplayName": "Elfdalian 8-dot braille",
+    "Language": "ovd",
+    "TableType": "computer",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
     "FileName": "pa.tbl",
     "DisplayName": "Punjabi braille",
     "Language": "pa",
@@ -1296,8 +1440,17 @@
     "DotsMode": 6
   },
   {
+    "FileName": "pt-comp6.utb",
+    "DisplayName": "Portuguese 6-dot computer braille",
+    "Language": "pt",
+    "TableType": "computer",
+    "ContractionType": null,
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
     "FileName": "pt-pt-comp8.ctb",
-    "DisplayName": "Portuguese computer braille",
+    "DisplayName": "Portuguese 8-dot computer braille",
     "Language": "pt",
     "TableType": "computer",
     "ContractionType": null,
@@ -1341,13 +1494,22 @@
     "DotsMode": 8
   },
   {
-    "FileName": "ru-compbrl.ctb",
-    "DisplayName": "Russian braille for program sources",
+    "FileName": "ru-comp6.utb",
+    "DisplayName": "Russian 6-dot computer braille",
     "Language": "ru",
-    "TableType": "literary",
-    "ContractionType": "no",
+    "TableType": "computer",
+    "ContractionType": null,
     "Direction": null,
-    "DotsMode": 0
+    "DotsMode": 6
+  },
+  {
+    "FileName": "ru-comp8.utb",
+    "DisplayName": "Russian 8-dot computer braille",
+    "Language": "ru",
+    "TableType": "computer",
+    "ContractionType": null,
+    "Direction": "both",
+    "DotsMode": 8
   },
   {
     "FileName": "ru-litbrl-detailed.utb",
@@ -1375,15 +1537,6 @@
     "ContractionType": "partial",
     "Direction": "forward",
     "DotsMode": 6
-  },
-  {
-    "FileName": "ru.ctb",
-    "DisplayName": "Russian computer braille",
-    "Language": "ru",
-    "TableType": "computer",
-    "ContractionType": null,
-    "Direction": "both",
-    "DotsMode": 8
   },
   {
     "FileName": "rw-rw-g1.utb",
@@ -1449,6 +1602,24 @@
     "DotsMode": 0
   },
   {
+    "FileName": "smi-6g0.utb",
+    "DisplayName": "Sami 6-dot braille",
+    "Language": "smi",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "smi-8g0.utb",
+    "DisplayName": "Sami 8-dot braille",
+    "Language": "smi",
+    "TableType": "computer",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
     "FileName": "sot-za-g1.ctb",
     "DisplayName": "Sesotho uncontracted braille",
     "Language": "st",
@@ -1467,12 +1638,21 @@
     "DotsMode": 0
   },
   {
-    "FileName": "sr.tbl",
+    "FileName": "sr-Cyrl.ctb",
+    "DisplayName": "Serbian braille for Cyrillic script",
+    "Language": "sr-Cyrl",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 0
+  },
+  {
+    "FileName": "sr-g1.ctb",
     "DisplayName": "Serbian braille",
     "Language": "sr",
     "TableType": "literary",
-    "ContractionType": null,
-    "Direction": "forward",
+    "ContractionType": "no",
+    "Direction": "both",
     "DotsMode": 0
   },
   {
@@ -1494,8 +1674,98 @@
     "DotsMode": 8
   },
   {
+    "FileName": "sv-6g0d.utb",
+    "DisplayName": "Swedish 6-dot uncontracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "sv-6g0p.utb",
+    "DisplayName": "Swedish 6-dot uncontracted braille with exact representation of foreign letters (focus on phonetics)",
+    "Language": "sv",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "sv-6g1d.ctb",
+    "DisplayName": "Swedish 6-dot partially contracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "literary",
+    "ContractionType": "partial",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "sv-6g2d.ctb",
+    "DisplayName": "Swedish 6-dot contracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "literary",
+    "ContractionType": "full",
+    "Direction": "both",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "sv-8g0d.utb",
+    "DisplayName": "Swedish 8-dot uncontracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
+    "FileName": "sv-8g0n.utb",
+    "DisplayName": "Swedish 8-dot uncontracted braille",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "no",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
+    "FileName": "sv-8g1d.ctb",
+    "DisplayName": "Swedish 8-dot partially contracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "partial",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
+    "FileName": "sv-8g1n.ctb",
+    "DisplayName": "Swedish 8-dot partially contracted braille",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "partial",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
+    "FileName": "sv-8g2d.ctb",
+    "DisplayName": "Swedish 8-dot contracted braille with exact representation of foreign letters",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "full",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
+    "FileName": "sv-8g2n.ctb",
+    "DisplayName": "Swedish 8-dot contracted braille",
+    "Language": "sv",
+    "TableType": "computer",
+    "ContractionType": "full",
+    "Direction": "both",
+    "DotsMode": 8
+  },
+  {
     "FileName": "sv-g0.utb",
-    "DisplayName": "Swedish uncontracted braille",
+    "DisplayName": "Swedish 6-dot uncontracted braille",
     "Language": "sv",
     "TableType": "literary",
     "ContractionType": "no",
@@ -1504,7 +1774,7 @@
   },
   {
     "FileName": "sv-g1.ctb",
-    "DisplayName": "Swedish partially contracted braille",
+    "DisplayName": "Swedish 6-dot partially contracted braille",
     "Language": "sv",
     "TableType": "literary",
     "ContractionType": "partial",
@@ -1513,7 +1783,7 @@
   },
   {
     "FileName": "sv-g2.ctb",
-    "DisplayName": "Swedish contracted braille",
+    "DisplayName": "Swedish 6-dot contracted braille",
     "Language": "sv",
     "TableType": "literary",
     "ContractionType": "full",
@@ -1575,6 +1845,15 @@
     "DotsMode": 0
   },
   {
+    "FileName": "syc.utb",
+    "DisplayName": "Syriac braille",
+    "Language": "syc",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
+    "DotsMode": 6
+  },
+  {
     "FileName": "ta-ta-g1.ctb",
     "DisplayName": "Tamil braille",
     "Language": "ta",
@@ -1612,10 +1891,28 @@
   },
   {
     "FileName": "th-g0.utb",
-    "DisplayName": "Thai braille",
+    "DisplayName": "Thai uncontracted braille",
     "Language": "th",
     "TableType": "literary",
     "ContractionType": "no",
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "th-g1.utb",
+    "DisplayName": "Thai partially contracted braille",
+    "Language": "th",
+    "TableType": "literary",
+    "ContractionType": "partial",
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "th-g2.ctb",
+    "DisplayName": "Thai contracted braille",
+    "Language": "th",
+    "TableType": "literary",
+    "ContractionType": "full",
     "Direction": "forward",
     "DotsMode": 6
   },
@@ -1671,6 +1968,15 @@
     "TableType": "literary",
     "ContractionType": "no",
     "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "uga.utb",
+    "DisplayName": "Ugaritic braille",
+    "Language": "uga",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": null,
     "DotsMode": 6
   },
   {
@@ -1809,6 +2115,24 @@
     "DotsMode": 0
   },
   {
+    "FileName": "yi.utb",
+    "DisplayName": "Yiddish braille",
+    "Language": "yi",
+    "TableType": "literary",
+    "ContractionType": "no",
+    "Direction": "forward",
+    "DotsMode": 6
+  },
+  {
+    "FileName": "zh-hk.ctb",
+    "DisplayName": "Cantonese braille",
+    "Language": "yue",
+    "TableType": "literary",
+    "ContractionType": null,
+    "Direction": null,
+    "DotsMode": 0
+  },
+  {
     "FileName": "zh-tw.ctb",
     "DisplayName": "Taiwanese bopomofo braille",
     "Language": "cmn",
@@ -1851,15 +2175,6 @@
     "TableType": "literary",
     "ContractionType": null,
     "Direction": "forward",
-    "DotsMode": 0
-  },
-  {
-    "FileName": "zh_HK.tbl",
-    "DisplayName": "Cantonese braille",
-    "Language": "yue",
-    "TableType": "literary",
-    "ContractionType": null,
-    "Direction": null,
     "DotsMode": 0
   },
   {

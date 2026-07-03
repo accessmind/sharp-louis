@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>AccessMind.SharpLouis.Tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" Version="8.10.0" />
+    <PackageReference Include="coverlet.collector" Version="10.0.1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.301" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SharpLouis\SharpLouis.csproj" />
+  </ItemGroup>
+
+  <!--
+    Reproduce the runtime layout the wrapper expects (see build/AccessMind.SharpLouis.targets):
+      $(OutDir)/liblouis.dll            – native library, resolved by bare name next to the assembly
+      $(OutDir)/LibLouis/tables.json    – table metadata read by TableCollection
+      $(OutDir)/LibLouis/tables/**      – translation tables opened by path by LibLouis
+    A ProjectReference does not flow these data assets, so copy them explicitly from the source tree.
+  -->
+  <ItemGroup>
+    <None Include="..\..\src\SharpLouis\LibLouis\liblouis.dll" Link="liblouis.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\src\SharpLouis\LibLouis\tables.json" Link="LibLouis\tables.json" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\src\SharpLouis\LibLouis\tables\**\*" Link="LibLouis\tables\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+</Project>

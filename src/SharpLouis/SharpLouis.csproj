@@ -1,6 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <!-- Plain net10.0: the managed API uses no Windows-specific .NET APIs, so any net10.0 consumer
+             can reference it. The Windows-only native dependency is expressed via runtimes/win-x64/native
+             (RID-scoped) and the assembly-level [SupportedOSPlatform("windows")] declared below. -->
+        <TargetFramework>net10.0</TargetFramework>
         <ContentTargetFolders>content</ContentTargetFolders>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Platforms>x64</Platforms>
@@ -50,8 +53,29 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Copy LibLouis files to output during build (for local development) -->
-        <None Update="LibLouis\**">
+        <!-- Assembly-level attributes (kept here rather than in an AssemblyInfo.cs). The library uses
+             no Windows-specific managed API, so it targets plain net10.0; this attribute still marks it
+             Windows-only for callers (a CA1416 hint) because of the native liblouis dependency. -->
+        <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+            <_Parameter1>windows</_Parameter1>
+        </AssemblyAttribute>
+        <!-- Lets the test project reach internal members such as Wrapper.ResolveTableSearchPath. -->
+        <InternalsVisibleTo Include="SharpLouis.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Tables: keep the LibLouis/ layout the wrapper resolves at runtime
+             (AppContext.BaseDirectory\LibLouis\tables). -->
+        <None Update="LibLouis\tables.json;LibLouis\tables\**">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <Visible>false</Visible>
+        </None>
+
+        <!-- Native DLL: flatten to the output ROOT (not the LibLouis\ subfolder) so bare-name P/Invoke
+             resolves it in local/dev builds and for ProjectReference consumers. NuGet package consumers
+             instead get it via the runtimes/win-x64/native asset below, resolved through deps.json. -->
+        <None Update="LibLouis\liblouis.dll">
+            <Link>liblouis.dll</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>false</Visible>
         </None>

@@ -34,6 +34,8 @@ Console.WriteLine(braille); // Outputs Unicode Braille: ⠠⠓⠑⠇⠇⠕⠀⠠
 
 A translator is cheap and thread-safe: create as many as you like (one per table), share them across threads, and keep them for the lifetime of your app.
 
+For a complete, runnable example see the [`samples/`](samples/) directory: a small console app that translates print text to Braille and back, letting you pick the table, direction, and input string.
+
 ## What Is It?
 
 When working with [Braille](https://en.wikipedia.org/wiki/Braille) input and output, one needs to have a tool that ideally would take into account all the particularities and intricacies of the Braille code for various languages and needs (contracted Braille, Unicode Braille, on-the-fly translation and so on). The TL;DR is that there is no straightforward one-to-one way of translating a given message from print to Braille and vice-versa, without knowing the language used, the code variant (known as Braille table) inside that language, sometimes the context and so on, and so forth.

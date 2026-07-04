@@ -1,0 +1,37 @@
+# Packs the NuGet package on a version tag and publishes it to nuget.org.
+# GitVersion (see GitVersion.yml) is in ManualDeployment mode, so releases are cut by pushing a
+# `v*` tag. This workflow only runs for those tags and only pushes when the NUGET_API_KEY secret is
+# configured, so it is inert until the maintainer opts in.
+
+name: Release
+
+on:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  publish:
+
+    runs-on: windows-latest
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        global-json-file: global.json
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore -c Release
+    - name: Test
+      run: dotnet test --no-build -c Release --verbosity normal
+    - name: Pack
+      run: dotnet pack src/SharpLouis/SharpLouis.csproj --no-build -c Release -o artifacts
+    - name: Publish to NuGet
+      if: ${{ env.NUGET_API_KEY != '' }}
+      run: dotnet nuget push "artifacts/*.nupkg" --api-key "$env:NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate

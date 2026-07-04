@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using AccessMind.SharpLouis.BrailleTranslationTable;
 
 namespace AccessMind.SharpLouis;
 
 // SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-// Copyright © 2024 AccessMind LLC.
+// Copyright © 2024–2026 AccessMind LLC.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -23,17 +19,23 @@ namespace AccessMind.SharpLouis;
 /// <summary>
 /// Translation tables collection. Works with the tables.json file provided in this library as part
 /// of LibLouis, which is itself a result of tables processing made by the LLJT console utility.
+///
+/// The primary use is the fluent filtering API (<see cref="PopulateFromJson"/>,
+/// <see cref="FindByLanguage"/>, <see cref="FindLiterary"/>, …). It also implements the full mutable
+/// <see cref="ICollection{T}"/> contract (<see cref="Add"/>, <see cref="Remove"/>, <see cref="Clear"/>,
+/// enumeration), so a collection can be populated by hand as well as from JSON.
 /// </summary>
 /// <seealso href="https://github.com/accessmind/liblouis-jsonify-tables"/>
-public class TableCollection: ICollection<TranslationTable> {
+public sealed class TableCollection: ICollection<TranslationTable> {
     private static readonly string TablesJson = Path.Combine(AppContext.BaseDirectory, "LibLouis", "tables.json");
-    private List<TranslationTable> tables = new List<TranslationTable>();
+    private List<TranslationTable> tables = [];
 
-    public int Count { get { return tables.Count; } }
+    public int Count => tables.Count;
 
-    public bool IsReadOnly { get; }
+    /// <summary>Always <see langword="false"/>: the collection is mutable.</summary>
+    public bool IsReadOnly => false;
 
-    public TableCollection? PopulateFromJson() {
+    public TableCollection PopulateFromJson() {
         using var file = File.OpenRead(TablesJson);
         this.tables = JsonSerializer.Deserialize<List<TranslationTable>>(file)!;
         return this;

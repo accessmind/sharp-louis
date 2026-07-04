@@ -2,7 +2,7 @@
 
 /// <summary>
 /// SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-/// Copyright © 2024 AccessMind LLC.
+/// Copyright © 2024–2026 AccessMind LLC.
 /// Licensed under the Apache License, Version 2.0 (the "License");
 /// you may not use this file except in compliance with the License.
 /// You may obtain a copy of the License at
@@ -15,10 +15,10 @@
 /// Helper for calling functions from LibLouis.dll
 /// </summary>
 internal enum NativeFunction {
-    charsToDots,
-    dotsToChars,
-    translateString,       // Do NOT Use the TypeForm parameter
-    translateStringTfe,    // Use the TypeForm parameter
-    backTranslateString,   // Do NOT Use the TypeForm parameter
-    backTranslateStringTfe // Use the TypeForm parameter
+    CharsToDots,
+    DotsToChars,
+    TranslateString,       // Do NOT Use the TypeForm parameter
+    TranslateStringTfe,    // Use the TypeForm parameter
+    BackTranslateString,   // Do NOT Use the TypeForm parameter
+    BackTranslateStringTfe // Use the TypeForm parameter
 }

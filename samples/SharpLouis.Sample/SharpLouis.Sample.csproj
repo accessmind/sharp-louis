@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Windows-only because it exercises the native liblouis.dll, exactly like the test project. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>AccessMind.SharpLouis.Sample</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Platforms>x64</Platforms>
+    <Platform>x64</Platform>
+    <IsPackable>false</IsPackable>
+    <!-- A sample, not shipped: keep it out of the packable/publishable surface. -->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SharpLouis\SharpLouis.csproj" />
+  </ItemGroup>
+
+  <!--
+    Reproduce the runtime layout the wrapper expects (see src/SharpLouis/build/AccessMind.SharpLouis.targets):
+      $(OutDir)/liblouis.dll            – native library, resolved by bare name next to the assembly
+      $(OutDir)/LibLouis/tables.json    – table metadata read by TableCollection
+      $(OutDir)/LibLouis/tables/**      – translation tables opened by path by LibLouis
+    A ProjectReference does not flow these data assets, so copy them explicitly from the source tree.
+    (A real NuGet consumer gets all of this automatically from the package.)
+  -->
+  <ItemGroup>
+    <None Include="..\..\src\SharpLouis\LibLouis\liblouis.dll" Link="liblouis.dll" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\src\SharpLouis\LibLouis\tables.json" Link="LibLouis\tables.json" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+    <None Include="..\..\src\SharpLouis\LibLouis\tables\**\*" Link="LibLouis\tables\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" Visible="false" />
+  </ItemGroup>
+
+</Project>

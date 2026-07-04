@@ -88,8 +88,11 @@ jobs:
     - name: Create GitHub release
       run: |
         $tag = $env:GITHUB_REF_NAME
-        $assets = Get-ChildItem artifacts/*.nupkg | ForEach-Object { $_.FullName }
-        $flags = @('--verify-tag', '--generate-notes', '--title', $tag)
+        $assets = Get-ChildItem artifacts/*.nupkg, artifacts/*.snupkg -ErrorAction SilentlyContinue | ForEach-Object { $_.FullName }
+        # Build one flat argument array and let PowerShell expand it into separate args for the native
+        # command. Do NOT use `@` splatting on a native command: it splits a single string path into
+        # its characters (a .nupkg path became "D", ":", "\", ... and gh choked on "D").
+        $ghArgs = @($tag) + $assets + @('--verify-tag', '--generate-notes', '--title', $tag)
         # Tags carrying a pre-release suffix (e.g. v1.2.3-beta.1) are marked as pre-releases on GitHub.
-        if ($tag -match '-') { $flags += '--prerelease' }
-        gh release create $tag @assets @flags
+        if ($tag -match '-') { $ghArgs += '--prerelease' }
+        gh release create $ghArgs

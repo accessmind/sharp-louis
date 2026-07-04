@@ -106,7 +106,7 @@
         <PackageReference Include="GitVersion.MsBuild" Version="6.8.1">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
     </ItemGroup>

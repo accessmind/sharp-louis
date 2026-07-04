@@ -3,7 +3,7 @@
 namespace AccessMind.SharpLouis;
 
 // SharpLouis, .NET wrapper for the LibLouis Braille Translator library
-// Copyright © 2024 AccessMind LLC.
+// Copyright © 2024–2026 AccessMind LLC.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -22,7 +22,7 @@ namespace AccessMind.SharpLouis;
 /// <param name="TableType">Translation table Braille type, such as literary or computer Braille</param>
 /// <param name="ContractionType">Contraction type, such as uncontracted, partially contracted or fully contracted</param>
 /// <param name="Direction">Translation direction, can be forward, backward or both</param>
-/// <param name="DotsMode">Braille dots mode, either eight-dot or six-dot</param>
+/// <param name="DotsMode">Braille dots mode: 8 (eight-dot) or 6 (six-dot), or 0 when the table declares no dots metadata</param>
 public readonly record struct TranslationTable(
     string FileName,
     string DisplayName,

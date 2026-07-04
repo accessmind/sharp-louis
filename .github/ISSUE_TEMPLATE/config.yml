@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: LibLouis documentation
+    url: https://liblouis.io/documentation/
+    about: Questions about translation tables and the underlying LibLouis behavior are best answered here.

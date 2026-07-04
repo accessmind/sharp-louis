@@ -1,6 +1,6 @@
 using AccessMind.SharpLouis;
 using AccessMind.SharpLouis.BrailleTranslationTable;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace AccessMind.SharpLouis.Tests;

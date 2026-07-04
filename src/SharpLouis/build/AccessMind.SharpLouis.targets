@@ -8,7 +8,7 @@
 
     The native liblouis.dll is NOT handled here — it ships as a normal runtimes/win-x64/native NuGet
     asset and is placed next to the consumer's exe by the SDK / resolved via deps.json, exactly like
-    any other native dependency. Wrapper.cs P/Invokes it by bare name ("liblouis").
+    any other native dependency. BrailleTranslator.cs P/Invokes it by bare name ("liblouis").
 
     Expected output structure:
       $(OutDir)/liblouis.dll            (from runtimes/win-x64/native, handled by the SDK)

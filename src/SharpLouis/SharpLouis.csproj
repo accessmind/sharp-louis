@@ -12,6 +12,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>AccessMind.SharpLouis</RootNamespace>
+        <!-- Hold the shipping library to the same bar as the tests: warnings are build errors.
+             Scoped to CI so a missing local git context (SourceLink's empty-source-link warning)
+             doesn't break ordinary developer builds; CI has full history and stays warning-clean. -->
+        <TreatWarningsAsErrors Condition="'$(GITHUB_ACTIONS)' == 'true'">true</TreatWarningsAsErrors>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
         <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 
@@ -31,7 +35,7 @@
         <Product>SharpLouis</Product>
         <Description>.NET wrapper for LibLouis, the open-source Braille translator and back-translator library</Description>
         <Authors>André Polykanine, AccessMind LLC.</Authors>
-        <Copyright>Copyright © 2024 André Polykanine, AccessMind LLC., and contributors.</Copyright>
+        <Copyright>Copyright © 2024–2026 André Polykanine, AccessMind LLC., and contributors.</Copyright>
         <PackageId>AccessMind.SharpLouis</PackageId>
         <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
         <RepositoryUrl>https://github.com/accessmind/sharp-louis</RepositoryUrl>
@@ -59,7 +63,7 @@
         <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
             <_Parameter1>windows</_Parameter1>
         </AssemblyAttribute>
-        <!-- Lets the test project reach internal members such as Wrapper.ResolveTableSearchPath. -->
+        <!-- Lets the test project reach internal members such as BrailleTranslator.ResolveTableSearchPath. -->
         <InternalsVisibleTo Include="SharpLouis.Tests" />
     </ItemGroup>
 

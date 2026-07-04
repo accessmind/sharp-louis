@@ -1,5 +1,5 @@
 using AccessMind.SharpLouis;
-using FluentAssertions;
+using AwesomeAssertions;
 using Xunit;
 
 namespace AccessMind.SharpLouis.Tests;
@@ -20,8 +20,8 @@ public class EnumTests {
     }
 
     [Fact]
-    public void TranslationModes_FixedWrapperCombination_Is196() {
-        // The mode the wrapper always uses: NoUndefined | UnicodeBraille | DotsInputOutput.
+    public void TranslationModes_FixedTranslatorCombination_Is196() {
+        // The mode the translator always uses: NoUndefined | UnicodeBraille | DotsInputOutput.
         var combined = TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput;
         ((int)combined).Should().Be(128 + 64 + 4);
     }

@@ -27,7 +27,7 @@ dotnet test SharpLouis.sln
 - `SharpLouis.sln` - Solution file at repository root
 - `src/SharpLouis/` - Main project directory
   - `SharpLouis.csproj` - Project file with all build configuration
-  - `Wrapper.cs` - Main wrapper class with P/Invoke declarations and translation methods
+  - `BrailleTranslator.cs` - Main translator class with P/Invoke declarations and translation methods
   - `TableCollection.cs` - Fluent API for filtering translation tables
   - `TranslationTable.cs` - Translation table metadata structure
   - `TranslationModes.cs` - Translation mode flags enum
@@ -44,17 +44,17 @@ dotnet test SharpLouis.sln
     - `tables.json` - Metadata for all translation tables
     - `tables/` - 400+ Braille translation table files (currently 472)
 - `tests/SharpLouis.Tests/` - xUnit test project (`net10.0-windows`)
-  - `WrapperTests.cs` - End-to-end translation tests against the real native `liblouis.dll`
+  - `BrailleTranslatorTests.cs` - End-to-end translation tests against the real native `liblouis.dll`
   - `TableCollectionTests.cs` - `tables.json` parsing and fluent filtering
   - `TranslationTableTests.cs` - Pure metadata-predicate logic
   - `EnumTests.cs` - Guards `TranslationModes`/`TypeForm` values against `liblouis.h`
   - The `.csproj` copies `liblouis.dll` (to output root) and `LibLouis/` tables into the test
-    output so the wrapper resolves them exactly as a real consumer would
+    output so the translator resolves them exactly as a real consumer would
 
 ## Key Architecture Points
 
 ### Native Interop
-- P/Invoke declarations are in the `#region DllImport` in `Wrapper.cs`
+- P/Invoke declarations are in the `#region DllImport` in `BrailleTranslator.cs`
 - The native library is referenced by bare name (`liblouis`) and located by the standard .NET native-library resolver (shipped as a `runtimes/win-x64/native` NuGet asset); it is not a hard-coded path, so it works next to the exe and under single-file publish
 - Uses `CallingConvention.StdCall` with `CharSet.Unicode`
 - Requires `AllowUnsafeBlocks` for pointer operations

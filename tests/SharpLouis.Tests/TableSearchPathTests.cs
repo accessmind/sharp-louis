@@ -13,7 +13,7 @@ public class TableSearchPathTests {
     [Fact]
     public void ResolveTableSearchPath_AsciiPath_ReturnedUnchanged() {
         const string path = @"C:\Users\Public\LibLouis\tables";
-        Wrapper.ResolveTableSearchPath(path).Should().Be(path);
+        BrailleTranslator.ResolveTableSearchPath(path).Should().Be(path);
     }
 
     [Fact]
@@ -22,7 +22,7 @@ public class TableSearchPathTests {
         var dir = Path.Combine(Path.GetTempPath(), "sharplouis_тест_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(dir);
         try {
-            var resolved = Wrapper.ResolveTableSearchPath(dir);
+            var resolved = BrailleTranslator.ResolveTableSearchPath(dir);
             // On a volume with 8.3 generation enabled we get the ASCII short form; where it is disabled
             // we fall back to the original path. Both are acceptable — what must never happen is a
             // freshly invented non-ASCII result that differs from the input.

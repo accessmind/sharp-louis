@@ -17,17 +17,17 @@ namespace AccessMind.SharpLouis;
 /// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 /// See the License for the specific language governing permissions and limitations under the License.
 ///
-/// The main wrapper class. Use <see cref="Create"/> (or <see cref="TryCreate"/>) to obtain an instance
-/// bound to one or more translation tables.
+/// The main Braille translator. Use <see cref="Create"/> (or <see cref="TryCreate"/>) to obtain an
+/// instance bound to one or more translation tables.
 ///
-/// A wrapper is a cheap, name-scoped handle: it owns no unmanaged resource of its own, so there is
+/// A translator is a cheap, name-scoped handle: it owns no unmanaged resource of its own, so there is
 /// nothing to dispose. LibLouis keeps a single process-global cache of compiled tables (keyed by the
-/// table-list string), so wrappers for different tables coexist and never interfere. All native calls
-/// are serialized internally, so a wrapper is safe to share across threads. That global cache normally
-/// lives for the lifetime of the process — call <see cref="ClearTableCache"/> only to reclaim its
-/// memory or to force tables to be recompiled from disk.
+/// table-list string), so translators for different tables coexist and never interfere. All native
+/// calls are serialized internally, so a translator is safe to share across threads. That global cache
+/// normally lives for the lifetime of the process — call <see cref="ClearTableCache"/> only to reclaim
+/// its memory or to force tables to be recompiled from disk.
 /// </summary>
-public sealed class Wrapper {
+public sealed class BrailleTranslator {
     const int TranslationMode = (int)(TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput); // Common for all member functions
     const int BackTranslationMode = 0; // The "mode" parameter is deprecated during backtranslation and must be set to 0 !!
 
@@ -142,7 +142,7 @@ public sealed class Wrapper {
     /// The comma-separated list of bundled base file names <see cref="Create"/> has already validated.
     /// This is the form actually handed to LibLouis, so it must contain no directory or rooted path.
     /// </param>
-    private Wrapper(string tableNames, string normalizedNames) {
+    private BrailleTranslator(string tableNames, string normalizedNames) {
         this.tableNames = tableNames;
         // Prefix the (ASCII-safe) tables folder onto the list. Per LibLouis, only the first name needs
         // the folder; the rest of the list and any included tables resolve relative to it. The names are
@@ -159,7 +159,7 @@ public sealed class Wrapper {
     /// <summary>Inverse of <see cref="CharsToDots"/> (LibLouis <c>lou_dotsToChar</c>).</summary>
     public string DotsToChars(string dots) => InvokeNative(NativeFunction.DotsToChars, dots, [], out _);
 
-    /// <summary>Translates text to Unicode Braille using the wrapper's table(s).</summary>
+    /// <summary>Translates text to Unicode Braille using the translator's table(s).</summary>
     public string TranslateString(string text) => InvokeNative(NativeFunction.TranslateString, text, [], out _);
 
     /// <summary>
@@ -171,7 +171,7 @@ public sealed class Wrapper {
         return InvokeNative(NativeFunction.TranslateStringTfe, text, typeForms, out _);
     }
 
-    /// <summary>Translates Unicode Braille back to text using the wrapper's table(s).</summary>
+    /// <summary>Translates Unicode Braille back to text using the translator's table(s).</summary>
     public string BackTranslateString(string braille) => InvokeNative(NativeFunction.BackTranslateString, braille, [], out _);
 
     /// <summary>
@@ -195,7 +195,7 @@ public sealed class Wrapper {
 
     /// <summary>
     /// Releases LibLouis's <b>process-global</b> cache of compiled translation tables (the native
-    /// <c>lou_free</c> call). This affects every wrapper in the process, not just one instance, so it
+    /// <c>lou_free</c> call). This affects every translator in the process, not just one instance, so it
     /// is normally unnecessary: the cache is cheap to keep and repopulates automatically on the next
     /// translation. Call it only to reclaim that memory, or to force tables to be recompiled from disk
     /// after their files have changed at runtime.
@@ -207,7 +207,7 @@ public sealed class Wrapper {
     }
 
     /// <summary>
-    /// Creates a wrapper bound to <paramref name="tableNames"/> (a single table file name such as
+    /// Creates a translator bound to <paramref name="tableNames"/> (a single table file name such as
     /// <c>"en-ueb-g1.ctb"</c>, or a comma-separated list). The table is compiled up front so failures
     /// surface here rather than on the first translation.
     /// </summary>
@@ -216,14 +216,14 @@ public sealed class Wrapper {
     /// <exception cref="DirectoryNotFoundException">The bundled tables folder is missing.</exception>
     /// <exception cref="FileNotFoundException">A named table file does not exist.</exception>
     /// <exception cref="LouisException">LibLouis could not compile the requested table(s).</exception>
-    public static Wrapper Create(string tableNames) {
+    public static BrailleTranslator Create(string tableNames) {
         if (string.IsNullOrWhiteSpace(tableNames)) {
             throw new ArgumentException("A table file name (or comma-separated list) is required.", nameof(tableNames));
         }
 
         // Probe the native library the same way DllImport would, so an absent/unloadable liblouis.dll
         // fails with a clear message instead of a first-call DllNotFoundException/BadImageFormatException.
-        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(Wrapper).Assembly, null, out IntPtr libHandle)) {
+        if (!NativeLibrary.TryLoad(LibLouisDll, typeof(BrailleTranslator).Assembly, null, out IntPtr libHandle)) {
             throw new DllNotFoundException(
                 $"The native '{LibLouisDll}' library could not be loaded. SharpLouis ships it for Windows x64; " +
                 "ensure the native asset is present next to your application.");
@@ -258,30 +258,30 @@ public sealed class Wrapper {
         }
 
         EnsureNativeInfo();
-        var wrapper = new Wrapper(tableNames, string.Join(",", shortNames));
+        var translator = new BrailleTranslator(tableNames, string.Join(",", shortNames));
 
         // Compile + cache the table now: fail fast on a broken table, and keep the first real
         // translation as fast as the rest.
         lock (NativeLock) {
-            if (lou_getTable(wrapper.tablePaths) == IntPtr.Zero) {
+            if (lou_getTable(translator.tablePaths) == IntPtr.Zero) {
                 throw new LouisException($"LibLouis could not compile the table list '{tableNames}'.");
             }
         }
 
-        return wrapper;
+        return translator;
     }
 
     /// <summary>
     /// Non-throwing variant of <see cref="Create"/>. Returns <see langword="false"/> (with
-    /// <paramref name="wrapper"/> set to <see langword="null"/>) if the native library, tables folder or
-    /// a requested table is missing, or the table fails to compile.
+    /// <paramref name="translator"/> set to <see langword="null"/>) if the native library, tables folder
+    /// or a requested table is missing, or the table fails to compile.
     /// </summary>
-    public static bool TryCreate(string tableNames, [NotNullWhen(true)] out Wrapper? wrapper) {
+    public static bool TryCreate(string tableNames, [NotNullWhen(true)] out BrailleTranslator? translator) {
         try {
-            wrapper = Create(tableNames);
+            translator = Create(tableNames);
             return true;
         } catch (Exception e) when (e is ArgumentException or DllNotFoundException or BadImageFormatException or IOException or LouisException) {
-            wrapper = null;
+            translator = null;
             return false;
         }
     }

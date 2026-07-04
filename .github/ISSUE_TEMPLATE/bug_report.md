@@ -12,7 +12,7 @@ A clear and concise description of the bug.
 
 ## Steps to reproduce
 
-1. Create a wrapper with table '...'
+1. Create a translator with table '...'
 2. Call '...' with input '...'
 3. Observe '...'
 
@@ -27,7 +27,7 @@ What actually happened, including the full text of any exception or error messag
 ## Environment
 
 - SharpLouis version (NuGet package version):
-- LibLouis version (`Wrapper.GetVersion()`):
+- LibLouis version (`BrailleTranslator.GetVersion()`):
 - .NET version:
 - Operating system and architecture (must be Windows x64):
 

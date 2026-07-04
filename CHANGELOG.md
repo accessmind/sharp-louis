@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - Unreleased
+## [2.0.0] — 2026-07-04
 
 This release contains several breaking API changes (see **Changed** below), so it is a major version
 bump from 1.1.0.
@@ -58,7 +58,7 @@ bump from 1.1.0.
 - Added an xUnit test suite (`tests/SharpLouis.Tests`) covering end-to-end native translation,
   table-collection filtering, metadata predicates, and the enum ABI values.
 
-## [1.1.0] - 2025-12-27
+## [1.1.0] — 2025-12-27
 
 ### Fixed 🐛
 
@@ -66,10 +66,10 @@ bump from 1.1.0.
   [Fix LibLouis bundling](https://github.com/accessmind/sharp-louis/pull/1) and
   [Fix LibLouis NuGet package DLL placement](https://github.com/accessmind/sharp-louis/pull/4).
 
-## [1.0.0] - 2024-06-04
+## [1.0.0] — 2024-06-04
 
 - Initial release.
 
-[2.0.0]: https://github.com/accessmind/sharp-louis/compare/v1.1.0...HEAD
+[2.0.0]: https://github.com/accessmind/sharp-louis/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/accessmind/sharp-louis/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/accessmind/sharp-louis/releases/tag/v1.0.0

@@ -1,7 +1,13 @@
 # Packs the NuGet package on a version tag and publishes it to nuget.org.
 # GitVersion (see GitVersion.yml) is in ManualDeployment mode, so releases are cut by pushing a
-# `v*` tag. This workflow only runs for those tags and only pushes when the NUGET_API_KEY secret is
-# configured, so it is inert until the maintainer opts in.
+# `v*` tag. This workflow only runs for those tags.
+#
+# It runs in two stages:
+#   1. build-test  - builds, tests and packs automatically, then prints the exact .nupkg name
+#                    (with its GitVersion-resolved version) to the run summary.
+#   2. publish     - gated behind the `nuget` environment: the run pauses for a manual approval
+#                    before anything is pushed to NuGet or a GitHub release is cut. The NuGet push
+#                    itself only fires when the NUGET_API_KEY environment secret is configured.
 
 name: Release
 
@@ -10,11 +16,8 @@ on:
     tags: [ "v*" ]
 
 jobs:
-  publish:
-
+  build-test:
     runs-on: windows-latest
-    env:
-      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
 
     steps:
     - uses: actions/checkout@v6
@@ -32,6 +35,54 @@ jobs:
       run: dotnet test --no-build -c Release --verbosity normal
     - name: Pack
       run: dotnet pack src/SharpLouis/SharpLouis.csproj --no-build -c Release -o artifacts
+    - name: Show packed package
+      run: |
+        $packages = Get-ChildItem artifacts/*.nupkg
+        "### 📦 Package awaiting approval" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+        foreach ($p in $packages) {
+          $size = '{0:N1} KB' -f ($p.Length / 1KB)
+          "- **$($p.Name)**  ($size)" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+          Write-Host "Packed: $($p.Name) ($size)"
+        }
+    - name: Upload package
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: artifacts/*.nupkg
+        if-no-files-found: error
+
+  publish:
+    needs: build-test
+    runs-on: windows-latest
+    environment: nuget
+    permissions:
+      contents: write   # create the GitHub release
+      id-token: write   # request the OIDC token for NuGet Trusted Publishing
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+    - name: Download package
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-package
+        path: artifacts
+    # Trusted Publishing: exchange the GitHub OIDC token for a short-lived (1 hour, single-use)
+    # nuget.org API key. Requires a matching trusted-publishing policy on nuget.org bound to this
+    # repo, the `release.yml` workflow file and the `nuget` environment. No stored API key.
+    - name: NuGet login (OIDC to temporary API key)
+      uses: NuGet/login@v1
+      id: nuget-login
+      with:
+        user: ${{ secrets.NUGET_USER }}
     - name: Publish to NuGet
-      if: ${{ env.NUGET_API_KEY != '' }}
-      run: dotnet nuget push "artifacts/*.nupkg" --api-key "$env:NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+      run: dotnet nuget push "artifacts/*.nupkg" --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+    - name: Create GitHub release
+      run: |
+        $tag = $env:GITHUB_REF_NAME
+        $assets = Get-ChildItem artifacts/*.nupkg | ForEach-Object { $_.FullName }
+        $flags = @('--verify-tag', '--generate-notes', '--title', $tag)
+        # Tags carrying a pre-release suffix (e.g. v1.2.3-beta.1) are marked as pre-releases on GitHub.
+        if ($tag -match '-') { $flags += '--prerelease' }
+        gh release create $tag @assets @flags

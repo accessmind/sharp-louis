@@ -10,7 +10,20 @@ changelog:
         - breaking-change
     - title: New Features 🎉
       labels:
+        - feature
+    - title: Enhancements ✨
+      labels:
         - enhancement
+    - title: Bug Fixes 🐛
+      labels:
+        - bug
+        - fix
+    - title: Documentation 📝
+      labels:
+        - documentation
+    - title: Dependencies 📦
+      labels:
+        - dependencies
     - title: Other Changes
       labels:
         - "*"

@@ -28,7 +28,7 @@ dotnet test SharpLouis.sln
 - `src/SharpLouis/` - Main project directory
   - `SharpLouis.csproj` - Project file with all build configuration
   - `BrailleTranslator.cs` - Main translator class with P/Invoke declarations and translation methods
-  - `TableCollection.cs` - Fluent API for filtering translation tables
+  - `TableCollection.cs` - Fluent API for filtering translation tables (filters are non-destructive: `FindByLanguage`/`FindLiterary` return a new collection and leave the receiver unchanged, so one populated collection can be reused for several independent queries)
   - `TranslationTable.cs` - Translation table metadata structure
   - `TranslationModes.cs` - Translation mode flags enum
   - `TypeForm.cs` - Typeform enum for emphasis styles
@@ -65,6 +65,19 @@ dotnet test SharpLouis.sln
 - Tables go to `content/LibLouis/` in the package
 - `build/AccessMind.SharpLouis.targets` copies files to consumer's output directory
 - Targets are included in both `build/` and `buildTransitive/` for transitive dependency support
+
+### Build Configuration (CI-scoped)
+Several build settings are deliberately **scoped to CI** via `Condition="'$(GITHUB_ACTIONS)' == 'true'"`,
+because CI (full git history, `github.com` remote) is the warning-clean source of truth while local
+developer builds stay lenient. Do **not** remove this scoping to make local builds behave like CI.
+- `TreatWarningsAsErrors` — on only in CI, so environment-specific warnings don't hard-fail local builds.
+- `ContinuousIntegrationBuild` — on only in CI (deterministic/normalized build paths).
+- **Symbols & SourceLink** — the package ships `snupkg` symbols (`IncludeSymbols` +
+  `SymbolPackageFormat`) with `Microsoft.SourceLink.GitHub` so consumers can step into library source
+  from GitHub. `EnableSourceLink` is turned **off** off CI: a developer's git remote may be an SSH host
+  alias (e.g. `github:`) that SourceLink's GitHub provider can't resolve, which otherwise emits a benign
+  "source control information is not available" warning. SourceLink only matters for the CI-published
+  package, so local builds skip it.
 
 ### Release Process
 Cutting a release is deliberate and human-gated: push a `v*` git tag (GitVersion resolves the

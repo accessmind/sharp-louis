@@ -108,11 +108,13 @@ var frenchLiteraryTables = new TableCollection()
     .FindLiterary();
 ```
 
+The filter methods are non-destructive — each returns a new collection and leaves the receiver unchanged — so a single populated collection can be reused for several independent queries (for example calling `ListLanguages()` on the full set and `FindLiterary()` on the same instance).
+
 It has the following methods:
 
 * `TableCollection PopulateFromJson()` — Parses the JSON file provided with the library and returns a table collection instance populated from this file.
-* `TableCollection FindByLanguage(string language)` — Filters the table collection and finds all the tables of a given language.
-* `TableCollection FindLiterary()` — Filters the collection and finds all the translation tables supporting literary Braille.
+* `TableCollection FindByLanguage(string language)` — Returns a new collection of the tables of a given language, leaving the receiver unchanged.
+* `TableCollection FindLiterary()` — Returns a new collection of the tables supporting literary Braille, leaving the receiver unchanged.
 * `TranslationTable? FindByFileName(string fileName)` — Accepts a file name and finds the corresponding translation table, or `null` if no table with that file name exists.
 * `Dictionary<string, string> ListLanguages()` — Searches all the tables and lists the languages supported by those tables. Returns a dictionary where the key of each element is a language code and the value is its full English name.
 

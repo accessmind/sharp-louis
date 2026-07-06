@@ -55,6 +55,34 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void Filters_AreNonDestructive_LeaveSourceUnchanged() {
+        var all = Populated();
+        var total = all.Count;
+
+        var literary = all.FindLiterary();
+
+        literary.Count.Should().BeLessThan(total, "filtering should narrow the result");
+        all.Count.Should().Be(total, "the source collection must not be mutated by a filter");
+    }
+
+    [Fact]
+    public void Populated_CanBeReusedForIndependentQueries() {
+        // Regression: FindLiterary used to mutate in place, so a later ListLanguages saw only the
+        // literary subset and dropped languages whose only tables are non-literary.
+        var collection = Populated();
+
+        var literaryCount = collection.FindLiterary().Count;
+        var germanCount = collection.FindByLanguage("de").Count;
+        var languages = collection.ListLanguages();
+
+        literaryCount.Should().BeGreaterThan(0);
+        germanCount.Should().BeGreaterThan(0);
+        // ListLanguages ran on the full set, unaffected by the two filters above.
+        languages.Count.Should().BeGreaterThan(germanCount);
+        languages.Should().ContainKey("en");
+    }
+
+    [Fact]
     public void ListLanguages_MapsKnownCodesToEnglishNames() {
         var languages = Populated().ListLanguages();
         languages.Should().ContainKey("en");

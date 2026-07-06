@@ -21,7 +21,10 @@ namespace AccessMind.SharpLouis;
 /// of LibLouis, which is itself a result of tables processing made by the LLJT console utility.
 ///
 /// The primary use is the fluent filtering API (<see cref="PopulateFromJson"/>,
-/// <see cref="FindByLanguage"/>, <see cref="FindLiterary"/>, …). It also implements the full mutable
+/// <see cref="FindByLanguage"/>, <see cref="FindLiterary"/>, …). The filter methods are
+/// <b>non-destructive</b>: each returns a new collection and leaves the receiver unchanged, so a single
+/// populated collection can be reused for several independent queries (for example
+/// <see cref="ListLanguages"/> after <see cref="FindLiterary"/>). It also implements the full mutable
 /// <see cref="ICollection{T}"/> contract (<see cref="Add"/>, <see cref="Remove"/>, <see cref="Clear"/>,
 /// enumeration), so a collection can be populated by hand as well as from JSON.
 /// </summary>
@@ -29,6 +32,12 @@ namespace AccessMind.SharpLouis;
 public sealed class TableCollection: ICollection<TranslationTable> {
     private static readonly string TablesJson = Path.Combine(AppContext.BaseDirectory, "LibLouis", "tables.json");
     private List<TranslationTable> tables = [];
+
+    /// <summary>Creates an empty collection, ready to <see cref="PopulateFromJson"/> or be populated by hand.</summary>
+    public TableCollection() { }
+
+    /// <summary>Wraps an already-filtered list; used by the non-destructive filter methods.</summary>
+    private TableCollection(List<TranslationTable> tables) => this.tables = tables;
 
     public int Count => tables.Count;
 
@@ -41,15 +50,14 @@ public sealed class TableCollection: ICollection<TranslationTable> {
         return this;
     }
 
-    public TableCollection FindByLanguage(string language) {
-        this.tables = this.tables.FindAll(t => t.Language == language).ToList();
-        return this;
-    }
+    /// <summary>Returns a new collection of the tables for <paramref name="language"/>; the receiver is
+    /// left unchanged.</summary>
+    public TableCollection FindByLanguage(string language) =>
+        new(this.tables.FindAll(t => t.Language == language));
 
-    public TableCollection FindLiterary() {
-        this.tables = this.tables.FindAll(t => t.IsLiteraryBraille());
-        return this;
-    }
+    /// <summary>Returns a new collection of the literary-braille tables; the receiver is left unchanged.</summary>
+    public TableCollection FindLiterary() =>
+        new(this.tables.FindAll(t => t.IsLiteraryBraille()));
 
     public TranslationTable? FindByFileName(string fileName) {
         // List<T>.Find on a record struct returns default (all-null fields) on a miss, which is

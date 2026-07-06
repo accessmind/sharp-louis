@@ -106,6 +106,21 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void ListLanguages_UsesCuratedName_ForCodesIcuCannotName() {
+        // ISO 639-2/3 codes LibLouis ships tables for but no .NET culture can name; ListLanguages must
+        // surface a real name rather than the bare code.
+        var collection = new TableCollection {
+            new TranslationTable("ovd.utb", "Elfdalian 6-dot braille", "ovd", "literary", "no", "both", 6),
+            new TranslationTable("smi.utb", "Sami 6-dot braille", "smi", "literary", "no", "both", 6),
+            new TranslationTable("hbo.utb", "Classical Hebrew braille", "hbo", "literary", "no", "both", 6),
+        };
+        var languages = collection.ListLanguages();
+        languages["ovd"].Should().Be("Elfdalian");
+        languages["smi"].Should().Be("Sami");
+        languages["hbo"].Should().Be("Classical Hebrew");
+    }
+
+    [Fact]
     public void ListLanguages_HasNoEmptyValues() {
         Populated().ListLanguages().Values.Should().OnlyContain(name => !string.IsNullOrEmpty(name));
     }

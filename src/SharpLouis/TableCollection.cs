@@ -84,12 +84,28 @@ public sealed class TableCollection: ICollection<TranslationTable> {
         return languages;
     }
 
+    // English names for ISO 639-2/3 codes that LibLouis ships tables for but no .NET/ICU culture can
+    // name (CultureInfo throws CultureNotFoundException). Without these, ListLanguages would surface the
+    // bare code (e.g. "ovd") to a UI. Keyed on the primary subtag, case-insensitively.
+    private static readonly Dictionary<string, string> KnownLanguageNames = new(StringComparer.OrdinalIgnoreCase) {
+        ["dra"] = "Dravidian",
+        ["hbo"] = "Classical Hebrew",
+        ["mun"] = "Munda",
+        ["ovd"] = "Elfdalian",
+        ["smi"] = "Sami",
+    };
+
     private static string GetEnglishName(string language) {
+        var primary = language.Split('-')[0];
+        if (KnownLanguageNames.TryGetValue(primary, out var known)) {
+            return known;
+        }
+
         try {
-            return new CultureInfo(language.Split('-')[0]).EnglishName;
+            return new CultureInfo(primary).EnglishName;
         } catch (CultureNotFoundException) {
-            // Some bundled tables use language codes that are not recognized .NET cultures
-            // (e.g. "awa", "bra", "cop"). Fall back to the raw code rather than throwing.
+            // A code no installed .NET/ICU culture recognizes and that isn't in KnownLanguageNames:
+            // fall back to the raw code rather than throwing.
             return language;
         }
     }

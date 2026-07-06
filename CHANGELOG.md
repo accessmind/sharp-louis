@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] — 2026-07-06
+
+### Fixed 🐛
+
+- `TableCollection.FindByLanguage()` and `FindLiterary()` are now non-destructive: each returns a new
+  collection and leaves the receiver unchanged, matching the documented fluent interface. They
+  previously mutated the collection in place, so reusing a populated instance for a second query gave
+  wrong results — for example `ListLanguages()` after `FindLiterary()` listed only the languages that
+  have a literary table, silently dropping the rest.
+
 ## [2.0.0] — 2026-07-04
 
 This release contains several breaking API changes (see **Changed** below), so it is a major version

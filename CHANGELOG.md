@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed 🐛
+
+- `TableCollection.ListLanguages()` now returns real names for several ISO 639-2/3 codes that LibLouis
+  ships tables for but no .NET/ICU culture can name — `dra` (Dravidian), `hbo` (Classical Hebrew),
+  `mun` (Munda), `ovd` (Elfdalian), and `smi` (Sami). They previously surfaced as the bare code (for
+  example a language picker showing "ovd" instead of "Elfdalian").
+
 ## [2.0.1] — 2026-07-06
 
 ### Fixed 🐛

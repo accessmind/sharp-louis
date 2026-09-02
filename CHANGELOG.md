@@ -5,6 +5,76 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] — 2026-09-02
+
+Upgrades the bundled LibLouis to 3.39.0 and reworks translation table metadata to carry what LibLouis
+actually declares. The metadata rework contains breaking API changes (see **Changed** below), so this
+is a major version bump from 2.0.2.
+
+### Added ✨
+
+- Upgraded the bundled native LibLouis to **3.39.0** (from 3.38.0), still built for Windows x64 with
+  UTF-32 (UCS-4) support, and refreshed all bundled translation tables to match — 478 files, up from
+  472. New in this LibLouis release: braille for Haitian Creole (`ht-g1.utb`) and English as used in
+  New Zealand following Braille Authority of New Zealand Aotearoa Trust policy (`en-nz-g1.utb`,
+  `en-nz-g2.ctb`), Russian mathematical braille, an overhauled Portuguese grade 1 table, better
+  back-translation for the Bulgarian, Italian and Biblical Hebrew tables, and more. See the
+  [LibLouis 3.39.0 release notes](https://github.com/liblouis/liblouis/blob/master/NEWS).
+- `TranslationTable` now carries the metadata LibLouis declares but SharpLouis previously discarded:
+  `IndexName` (the sort-friendly "Language, qualifiers" form), `Region`, `Grade`, `System`, `Variant`,
+  `Version`, `Locale` and `UnicodeRange`.
+- `TranslationTable.MatchesLanguage()` and `MatchesRegion()`, plus the static `LanguageRange` class
+  they are built on, match a language tag against a table's declared ranges per
+  [RFC 4647 extended filtering](https://datatracker.ietf.org/doc/html/rfc4647#section-3.3.2) — the
+  same rule LibLouis applies in `lou_findTable`.
+- `TranslationTable.IsOfType()` and `IsGrade()`.
+- `TableCollection.FindByRegion()`, `FindComputer()` and `FindByGrade()`.
+
+### Fixed 🐛
+
+- Two translation tables were **missing from `tables.json` entirely**: `ancient-languages-us.utb` and
+  `ancient-languages-borger.utb`. The jsonifier picked metadata lines by substring, so the word
+  "language" inside those tables' display names shadowed their real language fields and the tables
+  were filtered out as having no language. Both are now present, with all thirty-six of their
+  languages.
+- Tables that declare a metadata key more than once are no longer truncated to its first value. The
+  LibLouis manual is explicit that "the same key may appear multiple times in a table", and 22 bundled
+  tables declare several languages — Israeli braille (`he-IL.utb`) declares Hebrew, Arabic and English,
+  and it was previously discoverable only as Hebrew. Likewise the Swedish and Elfdalian 8-dot tables
+  declare both a `computer` and a `literary` type, of which only the first survived.
+- `TableCollection.ListLanguages()` now returns real names for the remaining language codes no
+  .NET/ICU culture names — including `jpa` (Jewish Palestinian Aramaic), `oar` (Old Aramaic), `obm`
+  (Moabite) and `xdm` (Edomite). Codes ICU does resolve today are curated as well, so the names no
+  longer depend on the ICU version of the host.
+
+### Changed ⚠️
+
+- `TranslationTable` is now a `sealed record` (a reference type) rather than a `readonly record
+  struct` (breaking change). Value equality is preserved, and comparing two instances compares
+  `Languages` and `TableTypes` element by element. `FindByFileName` still returns
+  `TranslationTable?`, but that is now a nullable reference, so `table.Value.DisplayName` becomes
+  `table.DisplayName`.
+- `TranslationTable` is constructed with an object initializer rather than positionally, and
+  `FileName`/`DisplayName` are `required` (breaking change). Replace
+  `new TranslationTable("x.ctb", "Display", "en", "literary", "no", "both", 6)` with
+  `new TranslationTable { FileName = "x.ctb", DisplayName = "Display", Languages = ["en"], TableTypes = ["literary"], ContractionType = "no", Direction = "both", DotsMode = 6 }`.
+- `TranslationTable.Language` (a `string`) is replaced by `Languages` (an `IReadOnlyList<string>`), and
+  `TableType` (a `string?`) by `TableTypes` (breaking change). Use `MatchesLanguage()` and
+  `IsOfType()`/`IsLiteraryBraille()` rather than comparing the old scalars.
+- `TableCollection.FindByLanguage()` now matches RFC 4647 extended language ranges instead of
+  comparing strings (breaking change in behavior). `FindByLanguage("en-GB")` now finds the tables
+  that declare plain `en`, and `FindByLanguage("ar")` now finds Israeli braille. Matching is
+  asymmetric, so a bare `akk` does not find a table declaring only `akk-Latn`.
+  Note that `FindByLanguage("en-GB")` deliberately returns *every* English table: no LibLouis table
+  narrows its language to `en-GB`, because the country is declared in the separate `region` field. To
+  select the specifically British tables, filter by region —
+  `FindByLanguage("en").FindByRegion("en-GB")`. See "Language or region?" in the README, which also
+  covers why Unified English Braille declares no region.
+- `tables.json` gains the new fields and renames `Language`/`TableType` to the array-valued
+  `Languages`/`TableTypes`. It is regenerated by
+  [LLJT](https://github.com/accessmind/liblouis-jsonify-tables), which was updated in step; if you
+  read the file directly rather than through `TableCollection`, update your reader.
+
 ## [2.0.2] — 2026-07-07
 
 ### Fixed 🐛

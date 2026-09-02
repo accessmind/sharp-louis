@@ -12,6 +12,22 @@ public class TableCollectionTests {
         return new TableCollection().PopulateFromJson();
     }
 
+    private static TranslationTable Entry(
+        string fileName,
+        string displayName,
+        IReadOnlyList<string> languages,
+        IReadOnlyList<string>? tableTypes = null) {
+        return new TranslationTable {
+            FileName = fileName,
+            DisplayName = displayName,
+            Languages = languages,
+            TableTypes = tableTypes ?? ["literary"],
+            ContractionType = "no",
+            Direction = "both",
+            DotsMode = 6,
+        };
+    }
+
     [Fact]
     public void PopulateFromJson_LoadsManyTables() {
         Populated().Count.Should().BeGreaterThan(200);
@@ -21,10 +37,10 @@ public class TableCollectionTests {
     public void FindByFileName_KnownTable_ReturnsExpectedMetadata() {
         var table = Populated().FindByFileName("en-ueb-g1.ctb");
         table.Should().NotBeNull();
-        table!.Value.DisplayName.Should().Be("Unified English uncontracted braille");
-        table.Value.Language.Should().Be("en");
-        table.Value.IsLiteraryBraille().Should().BeTrue();
-        table.Value.IsUncontracted().Should().BeTrue();
+        table!.DisplayName.Should().Be("Unified English uncontracted braille");
+        table.Languages.Should().Contain("en");
+        table.IsLiteraryBraille().Should().BeTrue();
+        table.IsUncontracted().Should().BeTrue();
     }
 
     [Fact]
@@ -33,11 +49,128 @@ public class TableCollectionTests {
     }
 
     [Fact]
-    public void FindByLanguage_ReturnsOnlyThatLanguage() {
+    public void PopulateFromJson_ReadsTheFullMetadataOfAMultiLanguageTable() {
+        // he-IL.utb is the case that drove the 3.0 metadata rework: three languages, a wildcard region
+        // and a grade, none of which the old single-valued schema could carry.
+        var hebrew = Populated().FindByFileName("he-IL.utb");
+        hebrew.Should().NotBeNull();
+        hebrew!.DisplayName.Should().Be("Israeli braille");
+        hebrew.IndexName.Should().Be("Hebrew, modern");
+        hebrew.Languages.Should().Equal("he", "ar", "en");
+        hebrew.Region.Should().Be("*-IL");
+        hebrew.Grade.Should().Be("1");
+        hebrew.TableTypes.Should().Equal("literary");
+        hebrew.DotsMode.Should().Be(6);
+        hebrew.Direction.Should().Be("forward");
+    }
+
+    [Fact]
+    public void PopulateFromJson_ReadsADualTypeTable() {
+        // sv-8g1d.ctb declares both "#+type: computer" and "#+type: literary", plus a variant and a
+        // standard version.
+        var swedish = Populated().FindByFileName("sv-8g1d.ctb");
+        swedish.Should().NotBeNull();
+        swedish!.TableTypes.Should().BeEquivalentTo(["computer", "literary"]);
+        swedish.IsComputerBraille().Should().BeTrue();
+        swedish.IsLiteraryBraille().Should().BeTrue();
+        swedish.Variant.Should().Be("detailed");
+        swedish.Version.Should().Be("2025");
+        swedish.Grade.Should().Be("1");
+    }
+
+    [Fact]
+    public void PopulateFromJson_IncludesTablesWhoseDisplayNameContainsAFieldName() {
+        // Regression: the jsonifier used to pick metadata lines by substring, so the word "language"
+        // inside these tables' display names shadowed their real language fields and dropped them from
+        // tables.json entirely.
+        var collection = Populated();
+        var ancient = collection.FindByFileName("ancient-languages-us.utb");
+        ancient.Should().NotBeNull();
+        ancient!.Languages.Should().HaveCount(36).And.Contain(["akk", "grc", "hbo"]);
+        collection.FindByFileName("ancient-languages-borger.utb").Should().NotBeNull();
+    }
+
+    [Fact]
+    public void PopulateFromJson_ReadsTheRemainingMetadataFields() {
+        var american = Populated().FindByFileName("en_US-comp8-ext.tbl");
+        american.Should().NotBeNull();
+        american!.Region.Should().Be("en-US");
+        american.System.Should().Be("ebae");
+        american.IndexName.Should().Be("English, U.S., computer, 8-dot");
+
+        var ipa = Populated().FindByFileName("IPA.utb");
+        ipa.Should().NotBeNull();
+        ipa!.Languages.Should().Equal("*-fonipa");
+        ipa.TableTypes.Should().BeEmpty("IPA.utb declares no #+type");
+
+        var ancient = Populated().FindByFileName("ancient-languages-us.utb");
+        ancient!.UnicodeRange.Should().Be("ucs4");
+    }
+
+    [Fact]
+    public void FindByLanguage_ReturnsOnlyTablesThatDeclareThatLanguage() {
         var german = Populated().FindByLanguage("de");
         german.Should().NotBeEmpty();
-        german.Should().OnlyContain(t => t.Language == "de");
+        german.Should().OnlyContain(t => t.MatchesLanguage("de"));
         german.Select(t => t.FileName).Should().Contain("de-g1.ctb");
+    }
+
+    [Fact]
+    public void FindByLanguage_FindsEveryLanguageOfAMultiLanguageTable() {
+        var collection = Populated();
+        collection.FindByLanguage("he").Select(t => t.FileName).Should().Contain("he-IL.utb");
+        collection.FindByLanguage("ar").Select(t => t.FileName).Should().Contain("he-IL.utb");
+        collection.FindByLanguage("en").Select(t => t.FileName).Should().Contain("he-IL.utb");
+    }
+
+    [Fact]
+    public void FindByLanguage_MatchesRangesRatherThanExactStrings() {
+        // A tag narrower than the declared range still finds the table.
+        Populated().FindByLanguage("en-GB").Select(t => t.FileName).Should().Contain("en-ueb-g1.ctb");
+    }
+
+    [Fact]
+    public void FindByRegion_ReturnsTablesForThatRegion() {
+        var israel = Populated().FindByRegion("he-IL");
+        israel.Select(t => t.FileName).Should().Contain("he-IL.utb");
+
+        var american = Populated().FindByRegion("en-US");
+        american.Should().NotBeEmpty();
+        american.Should().OnlyContain(t => t.MatchesRegion("en-US"));
+    }
+
+    [Fact]
+    public void Language_AndRegion_AnswerDifferentQuestions() {
+        var collection = Populated();
+
+        // "Which tables can a British reader use?" — every English table, because no table narrows its
+        // *language* to en-GB; the country lives in the region field.
+        var usableInBritain = collection.FindByLanguage("en-GB");
+        usableInBritain.Select(t => t.FileName).Should().Contain(["en-ueb-g1.ctb", "en-us-g1.ctb", "en_GB.tbl"]);
+
+        // "Which tables are specifically British?" — region, narrowed to English. The extra narrowing
+        // matters: region en-GB alone also matches the Greek-for-English-speakers tables, whose region
+        // is the broader range "en".
+        var british = collection.FindByLanguage("en").FindByRegion("en-GB");
+        british.Select(t => t.FileName).Should().BeEquivalentTo(["en-gb-comp8.ctb", "en-gb-g1.utb", "en_GB.tbl"]);
+
+        collection.FindByRegion("en-GB").Select(t => t.FileName).Should().Contain("grc-international-en.utb");
+    }
+
+    [Fact]
+    public void FindByRegion_ExcludesTheRegionlessInternationalTables() {
+        // UEB declares no region on purpose — it is the international code, not a national one — so a
+        // region filter drops it. A picker for a country wants that country's tables *plus* these.
+        var british = Populated().FindByLanguage("en").FindByRegion("en-GB");
+        british.Select(t => t.FileName).Should().NotContain("en-ueb-g1.ctb");
+        Populated().FindByFileName("en-ueb-g1.ctb")!.Region.Should().BeNull();
+    }
+
+    [Fact]
+    public void FindByGrade_ReturnsTablesOfThatGrade() {
+        var gradeTwo = Populated().FindByGrade("2");
+        gradeTwo.Should().NotBeEmpty();
+        gradeTwo.Should().OnlyContain(t => t.Grade == "2");
     }
 
     [Fact]
@@ -48,10 +181,17 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void FindComputer_ReturnsOnlyComputerTables() {
+        var computer = Populated().FindComputer();
+        computer.Should().NotBeEmpty();
+        computer.Should().OnlyContain(t => t.IsComputerBraille());
+    }
+
+    [Fact]
     public void Filters_Chain_Fluently() {
         var germanLiterary = Populated().FindByLanguage("de").FindLiterary();
         germanLiterary.Should().NotBeEmpty();
-        germanLiterary.Should().OnlyContain(t => t.Language == "de" && t.IsLiteraryBraille());
+        germanLiterary.Should().OnlyContain(t => t.MatchesLanguage("de") && t.IsLiteraryBraille());
     }
 
     [Fact]
@@ -92,13 +232,19 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void ListLanguages_IncludesEverySecondaryLanguageOfATable() {
+        // Arabic reaches the list only through he-IL.utb, which declares it alongside Hebrew.
+        Populated().ListLanguages().Should().ContainKey("ar");
+    }
+
+    [Fact]
     public void ListLanguages_FallsBackToRawCode_ForUnknownCulture() {
         // A language code that no .NET culture recognizes must fall back to the raw code rather than
         // throwing CultureNotFoundException. Built synthetically so the test does not depend on which
         // obscure bundled codes the current ICU happens to recognize.
         const string bogusCode = "notaculture123";
         var collection = new TableCollection {
-            new TranslationTable("bogus.ctb", "Bogus", bogusCode, "literary", "no", "both", 6),
+            Entry("bogus.ctb", "Bogus", [bogusCode]),
         };
         var languages = collection.ListLanguages();
         languages.Should().ContainKey(bogusCode);
@@ -110,14 +256,16 @@ public class TableCollectionTests {
         // ISO 639-2/3 codes LibLouis ships tables for but no .NET culture can name; ListLanguages must
         // surface a real name rather than the bare code.
         var collection = new TableCollection {
-            new TranslationTable("ovd.utb", "Elfdalian 6-dot braille", "ovd", "literary", "no", "both", 6),
-            new TranslationTable("smi.utb", "Sami 6-dot braille", "smi", "literary", "no", "both", 6),
-            new TranslationTable("hbo.utb", "Classical Hebrew braille", "hbo", "literary", "no", "both", 6),
+            Entry("ovd.utb", "Elfdalian 6-dot braille", ["ovd"]),
+            Entry("smi.utb", "Sami 6-dot braille", ["smi"]),
+            Entry("hbo.utb", "Classical Hebrew braille", ["hbo"]),
+            Entry("IPA.utb", "International Phonetic Alphabet braille", ["*-fonipa"]),
         };
         var languages = collection.ListLanguages();
         languages["ovd"].Should().Be("Elfdalian");
         languages["smi"].Should().Be("Sami");
         languages["hbo"].Should().Be("Classical Hebrew");
+        languages["*-fonipa"].Should().Be("International Phonetic Alphabet");
     }
 
     [Fact]
@@ -126,10 +274,21 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void ListLanguages_NamesEveryBundledLanguage() {
+        // Every language any bundled table declares must come back with a real name, not the bare code.
+        // A LibLouis upgrade that introduces an exotic code fails here, which is the cue to add it to
+        // TableCollection.KnownLanguageNames rather than let a picker show "ovd" or "xdm".
+        var unnamed = Populated().ListLanguages()
+            .Where(pair => pair.Value == pair.Key || pair.Value == pair.Key.Split('-')[0])
+            .Select(pair => pair.Key);
+        unnamed.Should().BeEmpty();
+    }
+
+    [Fact]
     public void ICollection_AddContainsRemoveClear_Behave() {
         var collection = new TableCollection();
         collection.IsReadOnly.Should().BeFalse();
-        var entry = new TranslationTable("custom.ctb", "Custom", "xx", "literary", "no", "both", 6);
+        var entry = Entry("custom.ctb", "Custom", ["xx"]);
 
         collection.Add(entry);
         collection.Count.Should().Be(1);
@@ -150,7 +309,7 @@ public class TableCollectionTests {
     [Fact]
     public void Enumerator_YieldsAddedItems() {
         var collection = new TableCollection();
-        var entry = new TranslationTable("custom.ctb", "Custom", "xx", "literary", "no", "both", 6);
+        var entry = Entry("custom.ctb", "Custom", ["xx"]);
         collection.Add(entry);
         collection.Should().ContainSingle().Which.Should().Be(entry);
     }

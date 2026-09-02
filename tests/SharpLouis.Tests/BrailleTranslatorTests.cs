@@ -23,7 +23,26 @@ public class BrailleTranslatorTests {
     public void GetVersion_ReturnsVersionString() {
         var version = BrailleTranslator.GetVersion();
         version.Should().NotBeNullOrWhiteSpace();
-        Version.TryParse(version, out _).Should().BeTrue("liblouis reports a dotted version like 3.38.0, got '{0}'", version);
+        Version.TryParse(version, out _).Should().BeTrue("liblouis reports a dotted version like 3.39.0, got '{0}'", version);
+    }
+
+    [Fact]
+    public void GetVersion_MatchesTheBundledLibLouis() {
+        // Guards against shipping a refreshed set of tables next to a stale native DLL. Bump this
+        // alongside the DLL, the tables, and the version stated in README.md.
+        BrailleTranslator.GetVersion().Should().StartWith("3.39.");
+    }
+
+    [Theory]
+    [InlineData("en-nz-g1.utb")]   // new in liblouis 3.39
+    [InlineData("en-nz-g2.ctb")]   // new in liblouis 3.39
+    [InlineData("ht-g1.utb")]      // new in liblouis 3.39: Haitian Creole
+    [InlineData("he-IL.utb")]      // the multi-language table the 3.0 metadata rework was built for
+    [InlineData("nl-NL-g0.utb")]   // generated from an m4 template, so easy to lose on an upgrade
+    public void Create_CompilesTheTablesAddedOrAtRiskInThisRelease(string tableName) {
+        var translator = BrailleTranslator.Create(tableName);
+        var braille = translator.TranslateString("test");
+        IsAllBraille(braille).Should().BeTrue("'{0}' must translate to Unicode Braille, got '{1}'", tableName, braille);
     }
 
     [Fact]

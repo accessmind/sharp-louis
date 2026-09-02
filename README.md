@@ -141,6 +141,34 @@ It has the following methods:
 
 Language and region matching is exposed on its own as the static `LanguageRange` class (`Matches(range, tag)` and `MatchesAny(ranges, tag)`), should you need to apply RFC 4647 extended filtering to something other than a table.
 
+### Language or region?
+
+These answer two different questions, and picking the wrong one is the easiest mistake to make with this API.
+
+`FindByLanguage("en-GB")` returns **every English table** — UEB, American, New Zealand, the lot. That is not a bug: no LibLouis table narrows its _language_ to `en-GB`. Every English table declares plain `language: en`, and the country lives in a separate `region` field. So `FindByLanguage` is asking _"which tables can a British reader use?"_, and the honest answer is all of them.
+
+To ask _"which tables are specifically British?"_, filter by region — and narrow to the language too:
+
+```csharp
+var british = new TableCollection()
+    .PopulateFromJson()
+    .FindByLanguage("en")
+    .FindByRegion("en-GB");
+// en-gb-comp8.ctb, en-gb-g1.utb, en_GB.tbl
+```
+
+The `FindByLanguage("en")` step is not redundant. Regions are extended language ranges too, so a bare `FindByRegion("en-GB")` also matches the two _Greek braille as used by English speakers_ tables, whose region is the broader range `en`. They really are used in Britain — they are just not English tables.
+
+One thing to know before you build a country picker: **Unified English Braille declares no region at all**, because it is an international code rather than a national one. A region filter therefore drops `en-ueb-g1.ctb` and `en-ueb-g2.ctb`, which is exactly what the UK has used since 2011. For a UK table list you most likely want the region-`en-GB` tables _plus_ the region-less UEB ones, something like:
+
+```csharp
+var all = new TableCollection().PopulateFromJson();
+var forTheUk = all.FindByLanguage("en")
+    .Where(t => t.MatchesRegion("en-GB") || t.Region is null);
+```
+
+The same shape applies elsewhere: `FindByRegion("he-IL")` finds Israeli braille through its `region: *-IL`, and `FindByRegion("en-NZ")` finds the New Zealand tables through their `region: *-NZ`.
+
 ## Building from Source
 
 ### Prerequisites

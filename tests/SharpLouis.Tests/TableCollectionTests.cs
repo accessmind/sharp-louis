@@ -140,6 +140,33 @@ public class TableCollectionTests {
     }
 
     [Fact]
+    public void Language_AndRegion_AnswerDifferentQuestions() {
+        var collection = Populated();
+
+        // "Which tables can a British reader use?" — every English table, because no table narrows its
+        // *language* to en-GB; the country lives in the region field.
+        var usableInBritain = collection.FindByLanguage("en-GB");
+        usableInBritain.Select(t => t.FileName).Should().Contain(["en-ueb-g1.ctb", "en-us-g1.ctb", "en_GB.tbl"]);
+
+        // "Which tables are specifically British?" — region, narrowed to English. The extra narrowing
+        // matters: region en-GB alone also matches the Greek-for-English-speakers tables, whose region
+        // is the broader range "en".
+        var british = collection.FindByLanguage("en").FindByRegion("en-GB");
+        british.Select(t => t.FileName).Should().BeEquivalentTo(["en-gb-comp8.ctb", "en-gb-g1.utb", "en_GB.tbl"]);
+
+        collection.FindByRegion("en-GB").Select(t => t.FileName).Should().Contain("grc-international-en.utb");
+    }
+
+    [Fact]
+    public void FindByRegion_ExcludesTheRegionlessInternationalTables() {
+        // UEB declares no region on purpose — it is the international code, not a national one — so a
+        // region filter drops it. A picker for a country wants that country's tables *plus* these.
+        var british = Populated().FindByLanguage("en").FindByRegion("en-GB");
+        british.Select(t => t.FileName).Should().NotContain("en-ueb-g1.ctb");
+        Populated().FindByFileName("en-ueb-g1.ctb")!.Region.Should().BeNull();
+    }
+
+    [Fact]
     public void FindByGrade_ReturnsTablesOfThatGrade() {
         var gradeTwo = Populated().FindByGrade("2");
         gradeTwo.Should().NotBeEmpty();

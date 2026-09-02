@@ -1,7 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Globalization;
 using System.Text.Json;
-using AccessMind.SharpLouis.BrailleTranslationTable;
 
 namespace AccessMind.SharpLouis;
 
@@ -26,7 +25,9 @@ namespace AccessMind.SharpLouis;
 /// populated collection can be reused for several independent queries (for example
 /// <see cref="ListLanguages"/> after <see cref="FindLiterary"/>). It also implements the full mutable
 /// <see cref="ICollection{T}"/> contract (<see cref="Add"/>, <see cref="Remove"/>, <see cref="Clear"/>,
-/// enumeration), so a collection can be populated by hand as well as from JSON.
+/// enumeration), so a collection can be populated by hand as well as from JSON — and, being
+/// enumerable, it composes with LINQ for anything the built-in filters do not cover (say,
+/// <c>collection.Where(t =&gt; t.System == "ueb")</c>).
 /// </summary>
 /// <seealso href="https://github.com/accessmind/liblouis-jsonify-tables"/>
 public sealed class TableCollection: ICollection<TranslationTable> {
@@ -50,52 +51,109 @@ public sealed class TableCollection: ICollection<TranslationTable> {
         return this;
     }
 
-    /// <summary>Returns a new collection of the tables for <paramref name="language"/>; the receiver is
-    /// left unchanged.</summary>
-    public TableCollection FindByLanguage(string language) =>
-        new(this.tables.FindAll(t => t.Language == language));
+    /// <summary>
+    /// Returns a new collection of the tables usable for <paramref name="languageTag"/>; the receiver is
+    /// left unchanged.
+    /// </summary>
+    /// <remarks>
+    /// A table declares its languages as RFC 4647 extended language ranges, and this matches
+    /// <paramref name="languageTag"/> against them the way LibLouis itself does — so
+    /// <c>FindByLanguage("en-GB")</c> finds the tables that declare plain <c>en</c>, and
+    /// <c>FindByLanguage("he")</c> finds <c>he-IL.utb</c>. A table that declares several languages is
+    /// found under each of them: Israeli braille answers to <c>he</c>, <c>ar</c> and <c>en</c> alike.
+    /// Matching is asymmetric, so a bare <c>akk</c> does <em>not</em> find a table declaring only
+    /// <c>akk-Latn</c>.
+    /// </remarks>
+    public TableCollection FindByLanguage(string languageTag) =>
+        new(this.tables.FindAll(t => t.MatchesLanguage(languageTag)));
+
+    /// <summary>
+    /// Returns a new collection of the tables used in <paramref name="regionTag"/>, matched as an
+    /// RFC 4647 extended language range; the receiver is left unchanged. Tables that declare no region
+    /// are excluded.
+    /// </summary>
+    public TableCollection FindByRegion(string regionTag) =>
+        new(this.tables.FindAll(t => t.MatchesRegion(regionTag)));
 
     /// <summary>Returns a new collection of the literary-braille tables; the receiver is left unchanged.</summary>
     public TableCollection FindLiterary() =>
         new(this.tables.FindAll(t => t.IsLiteraryBraille()));
 
-    public TranslationTable? FindByFileName(string fileName) {
-        // List<T>.Find on a record struct returns default (all-null fields) on a miss, which is
-        // indistinguishable from a real entry. Return a nullable so callers can detect "not found".
-        foreach (TranslationTable table in this.tables) {
-            if (table.FileName == fileName) {
-                return table;
-            }
-        }
+    /// <summary>Returns a new collection of the computer-braille tables; the receiver is left unchanged.</summary>
+    public TableCollection FindComputer() =>
+        new(this.tables.FindAll(t => t.IsComputerBraille()));
 
-        return null;
-    }
+    /// <summary>
+    /// Returns a new collection of the tables of the given Braille grade (<c>"0"</c>, <c>"1"</c>,
+    /// <c>"2"</c>, <c>"3"</c>, and the fractional grades such as <c>"1.5"</c>); the receiver is left
+    /// unchanged.
+    /// </summary>
+    public TableCollection FindByGrade(string grade) =>
+        new(this.tables.FindAll(t => t.IsGrade(grade)));
 
+    /// <summary>
+    /// Finds the table with the given file name, or <see langword="null"/> when the collection holds no
+    /// such table.
+    /// </summary>
+    public TranslationTable? FindByFileName(string fileName) =>
+        this.tables.Find(t => t.FileName == fileName);
+
+    /// <summary>
+    /// Lists every language the collection's tables declare, as a map of language code to English name.
+    /// A table that declares several languages contributes each of them.
+    /// </summary>
     public Dictionary<string, string> ListLanguages() {
         var languages = new Dictionary<string, string>();
         foreach (TranslationTable table in this.tables) {
-            if (string.IsNullOrEmpty(table.Language) || languages.ContainsKey(table.Language)) {
-                continue;
-            }
+            foreach (string language in table.Languages) {
+                if (string.IsNullOrEmpty(language) || languages.ContainsKey(language)) {
+                    continue;
+                }
 
-            languages[table.Language] = GetEnglishName(table.Language);
+                languages[language] = GetEnglishName(language);
+            }
         }
 
         return languages;
     }
 
-    // English names for ISO 639-2/3 codes that LibLouis ships tables for but no .NET/ICU culture can
-    // name (CultureInfo throws CultureNotFoundException). Without these, ListLanguages would surface the
-    // bare code (e.g. "ovd") to a UI. Keyed on the primary subtag, case-insensitively.
+    // English names for the language ranges LibLouis ships tables for that .NET cannot name on its own.
+    // Depending on the ICU data on the machine, CultureInfo either throws CultureNotFoundException or —
+    // more often — hands back the bare code as the "English name", so a language picker would show
+    // "ovd" instead of "Elfdalian". Codes ICU does resolve today (Akkadian, Sumerian, …) are listed too,
+    // so the names do not depend on which ICU version the host happens to carry. Looked up
+    // case-insensitively, first by the whole range — which is how the wildcard ranges are named — and
+    // then by the primary subtag.
     private static readonly Dictionary<string, string> KnownLanguageNames = new(StringComparer.OrdinalIgnoreCase) {
+        ["*-fonipa"] = "International Phonetic Alphabet",
+        ["akk"] = "Akkadian",
         ["dra"] = "Dravidian",
+        ["elx"] = "Elamite",
         ["hbo"] = "Classical Hebrew",
+        ["hit"] = "Hittite",
+        ["jpa"] = "Jewish Palestinian Aramaic",
         ["mun"] = "Munda",
+        ["oar"] = "Old Aramaic",
+        ["obm"] = "Moabite",
         ["ovd"] = "Elfdalian",
+        ["peo"] = "Old Persian",
         ["smi"] = "Sami",
+        ["sux"] = "Sumerian",
+        ["syc"] = "Classical Syriac",
+        ["tlg"] = "Tagalog",
+        ["uga"] = "Ugaritic",
+        ["xdm"] = "Edomite",
+        ["xeb"] = "Eblaite",
+        ["xhu"] = "Hurrian",
+        ["xlu"] = "Luwian",
+        ["xur"] = "Urartian",
     };
 
     private static string GetEnglishName(string language) {
+        if (KnownLanguageNames.TryGetValue(language, out var knownRange)) {
+            return knownRange;
+        }
+
         var primary = language.Split('-')[0];
         if (KnownLanguageNames.TryGetValue(primary, out var known)) {
             return known;

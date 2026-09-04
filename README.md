@@ -1,6 +1,21 @@
 # SharpLouis
 
+[![NuGet version](https://img.shields.io/nuget/v/AccessMind.SharpLouis?logo=nuget&label=NuGet)](https://www.nuget.org/packages/AccessMind.SharpLouis)
+[![NuGet downloads](https://img.shields.io/nuget/dt/AccessMind.SharpLouis?logo=nuget&label=downloads)](https://www.nuget.org/packages/AccessMind.SharpLouis)
+[![Build status](https://github.com/accessmind/sharp-louis/actions/workflows/dotnet.yml/badge.svg?branch=master)](https://github.com/accessmind/sharp-louis/actions/workflows/dotnet.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)](LICENSE.md)
+
 .NET wrapper for the [LibLouis](https://github.com/liblouis/liblouis) Braille translator and back-translator library.
+
+## Features
+
+* **Batteries included.** The native LibLouis 3.39.0 library and all 478 translation tables ship inside the package and are copied to your output directory — no separate download, no native build step, no `PATH` juggling.
+* **Translation both ways, with emphasis.** Print to Unicode Braille and back, optionally carrying per-character typeforms (bold, italic, underline and friends) in either direction.
+* **A searchable table catalog.** Every table's metadata is parsed from a bundled `tables.json` into a `TranslationTable` record, and `TableCollection` offers a non-destructive fluent API to filter it by language, region, Braille type, grade or contraction level — enough to build a table picker without hard-coding a single file name.
+* **Correct language matching.** LibLouis declares table languages and regions as [RFC 4647 extended language ranges](https://datatracker.ietf.org/doc/html/rfc4647#section-3.3.2) (`*-IL`, `akk-Latn`, `*-fonipa`), and SharpLouis matches them the way LibLouis itself does rather than by string comparison.
+* **Cheap and thread-safe.** A translator holds no unmanaged resource: create one per table, share it across threads, keep it for the lifetime of the app, and never think about disposal.
+* **Fails early and clearly.** Tables are compiled at `Create` time, so a missing native library or a broken table throws a descriptive exception up front — with `TryCreate` for when you would rather probe than catch.
+* **Packaged properly.** A plain `net10.0` target, a RID-scoped native asset, XML docs for IntelliSense, and SourceLink-enabled `snupkg` symbols so you can step straight into the library source from GitHub.
 
 ## Installation
 
@@ -42,15 +57,15 @@ When working with [Braille](https://en.wikipedia.org/wiki/Braille) input and out
 
 There are several software solutions dealing with this task, but most of them are proprietary and very expensive for use in derived products. The most widely known and used free (LGPL-licensed) open-source solution is [LibLouis](https://github.com/liblouis/liblouis), a library written in C initially for the BRLTTY Linux screen reader but gone far beyond this. Now it is available for all popular operating systems and used in many open-source and proprietary products, including screen readers and Braille translating and embossing software.
 
-However, to this time there was no publicly available open-source wrapper for .NET environment: everyone who wanted to use LibLouis in a .NET-based product had to wrap the C API by oneself. SharpLouis is an attempt to start an initiative that would eventually lead to a robust open-source solution benefitial for every .NET developer wanting to incorporate Braille in their work.
+However, for a long time there was no publicly available open-source wrapper for the .NET environment: everyone who wanted to use LibLouis in a .NET-based product had to wrap the C API by oneself. SharpLouis exists to close that gap. It has been published on NuGet since 2024, follows [semantic versioning](https://semver.org/spec/v2.0.0.html), keeps a [change log](CHANGELOG.md), and tracks upstream LibLouis releases — bundled library, tables and metadata refreshed together.
 
 ## Limitations and Particularities
 
-Currently SharpLouis is only in the beginning of its life, so there are some known limitations.
+SharpLouis has been shipping since 2024 and its API is stable — see the [change log](CHANGELOG.md) for what changed in each release. A few deliberate scoping choices remain, though, and they are worth knowing before you build on it.
 
 * For now, only Windows is supported as we provide LibLouis DLL and tables inside the package. The managed assembly targets plain `net10.0`, so a cross-platform project can reference it without a hard platform block, but any call into it will fail at runtime off Windows x64 (the compiler will also warn via `[SupportedOSPlatform("windows")]`);
 * Currently only 64-bit systems are supported (platform is restricted to x64 in the project file);
-* The bundled LibLouis native library is version 3.39. You can confirm the exact version at runtime with `BrailleTranslator.GetVersion()`;
+* The bundled LibLouis native library is version 3.39.0. You can confirm the exact version at runtime with `BrailleTranslator.GetVersion()`;
 * The DLL is built with UTF-32 support (see LibLouis documentation if you don’t know what we are talking about);
 * Translation tables are both bundled with the package and listed in a JSON file for displaying and filtering (see the section about translate table collection below). The utility that processes tables is called [LLJT](https://github.com/accessmind/liblouis-jsonify-tables) and is also open-source.
 * Translation mode is fixed to `TranslationModes.NoUndefined | TranslationModes.UnicodeBraille | TranslationModes.DotsInputOutput`, i.e., currently SharpLouis works only with Unicode Braille internally and no output for undefined characters is provided.
@@ -203,40 +218,49 @@ dotnet build SharpLouis.sln -c Release
 dotnet pack src/SharpLouis/SharpLouis.csproj -c Release
 ```
 
-The package will be created in the `src/SharpLouis/bin/Release/` directory.
+The package will be created in the `src/SharpLouis/bin/Release/` directory. The version is not set in the project file: it is derived from the git tags by [GitVersion](https://gitversion.net/), so a release is cut by pushing a `v*` tag.
+
+### Run the Tests
+
+```bash
+dotnet test SharpLouis.sln
+```
+
+The test project exercises the real native `liblouis.dll` — the tables and the DLL are copied into the test output exactly as a real consumer would get them — so it only runs on Windows x64.
 
 ### Project Structure
 
-```
-sharp-louis/
-├── SharpLouis.sln              # Solution file
-├── src/
-│   └── SharpLouis/
-│       ├── SharpLouis.csproj   # Project file
-│       ├── BrailleTranslator.cs # Main translator class with P/Invoke
-│       ├── TableCollection.cs  # Fluent API for filtering tables
-│       ├── TranslationTable.cs # Translation table metadata
-│       ├── LanguageRange.cs    # RFC 4647 extended language range matching
-│       ├── TranslationModes.cs # Translation mode flags
-│       ├── TypeForm.cs         # Typeform enum
-│       ├── NativeFunctions.cs  # Native function enum
-│       ├── BrailleTranslationTable/  # Metadata structures
-│       │   ├── BrailleContraction.cs
-│       │   ├── BrailleMode.cs
-│       │   ├── BrailleType.cs
-│       │   └── TranslationDirection.cs
-│       ├── build/              # MSBuild targets for NuGet consumers
-│       │   └── AccessMind.SharpLouis.targets
-│       └── LibLouis/
-│           ├── liblouis.dll    # Native library (Windows x64)
-│           ├── tables.json     # Table metadata
-│           └── tables/         # Translation tables
-└── README.md
-```
+At the repository root:
+
+* `SharpLouis.sln` — the solution, covering the library, the tests and the sample.
+* `README.md` — this file.
+* `CHANGELOG.md` — the release history, in [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format.
+* `CONTRIBUTING.md` — how to contribute.
+* `GitVersion.yml` — versioning configuration; the package version comes from git tags, not from the project file.
+
+The library lives in `src/SharpLouis/`:
+
+* `SharpLouis.csproj` — the project file, holding all build and packaging configuration.
+* `BrailleTranslator.cs` — the main translator class, including the P/Invoke declarations.
+* `TableCollection.cs` — the fluent API for filtering translation tables.
+* `TranslationTable.cs` — translation table metadata.
+* `LanguageRange.cs` — RFC 4647 extended language range matching.
+* `TranslationModes.cs` — translation mode flags.
+* `TypeForm.cs` — the typeform enum for emphasis styles.
+* `NativeFunctions.cs` — the native function enum.
+* `LouisException.cs` — the exception raised when LibLouis rejects a table or a translation.
+* `BrailleTranslationTable/` — the metadata constant structures: `BrailleContraction.cs`, `BrailleMode.cs`, `BrailleType.cs` and `TranslationDirection.cs`.
+* `build/AccessMind.SharpLouis.targets` — MSBuild targets that copy the native assets into a consuming project's output.
+* `LibLouis/` — the native assets: `liblouis.dll` (Windows x64), `tables.json` (table metadata) and `tables/` (the translation tables themselves).
+
+And alongside it:
+
+* `tests/SharpLouis.Tests/` — the xUnit suite, run against the real native library.
+* `samples/SharpLouis.Sample/` — a runnable console demo.
 
 ## Contributing
 
-All contributions, big or small, are welcome! Please create an issue before submitting a pull request, thus it will be easier to track everyone's work. Let's improve SharpLouis together!
+All contributions, big or small, are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) and create an issue before submitting a pull request, thus it will be easier to track everyone's work. Let's improve SharpLouis together!
 
 ## License
 

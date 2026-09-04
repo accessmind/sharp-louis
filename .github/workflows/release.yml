@@ -2,12 +2,19 @@
 # GitVersion (see GitVersion.yml) is in ManualDeployment mode, so releases are cut by pushing a
 # `v*` tag. This workflow only runs for those tags.
 #
-# It runs in two stages:
-#   1. build-test  - builds, tests and packs automatically, then prints the exact .nupkg name
-#                    (with its GitVersion-resolved version) to the run summary.
-#   2. publish     - gated behind the `nuget` environment: the run pauses for a manual approval
-#                    before anything is pushed to NuGet or a GitHub release is cut. The NuGet push
-#                    itself only fires when the NUGET_API_KEY environment secret is configured.
+# It runs in two stages, both automatic - pushing the tag is the only human action:
+#   1. build-test  - builds, tests and packs, then prints the exact .nupkg name (with its
+#                    GitVersion-resolved version) to the run summary and uploads it as an artifact.
+#   2. publish     - downloads that same artifact, pushes it to nuget.org via Trusted Publishing
+#                    and cuts the GitHub release.
+#
+# The `nuget` environment is still declared, and must stay: the nuget.org trusted-publishing policy
+# pins it, so the OIDC exchange only works from a job that enters it. It no longer carries required
+# reviewers, so it no longer pauses the run - its remaining protection is the environment's
+# "Deployment branches and tags" rule, which restricts it to `v*` tags.
+#
+# Note that nuget.org versions are immutable: once this workflow pushes, that version is permanent.
+# The tag is the point of no return.
 
 name: Release
 
@@ -38,7 +45,7 @@ jobs:
     - name: Show packed package
       run: |
         $packages = Get-ChildItem artifacts/*.nupkg
-        "### 📦 Package awaiting approval" | Out-File $env:GITHUB_STEP_SUMMARY -Append
+        "### 📦 Packed package" | Out-File $env:GITHUB_STEP_SUMMARY -Append
         foreach ($p in $packages) {
           $size = '{0:N1} KB' -f ($p.Length / 1KB)
           "- **$($p.Name)**  ($size)" | Out-File $env:GITHUB_STEP_SUMMARY -Append
@@ -72,7 +79,8 @@ jobs:
         path: artifacts
     # Trusted Publishing: exchange the GitHub OIDC token for a short-lived (1 hour, single-use)
     # nuget.org API key. Requires a matching trusted-publishing policy on nuget.org bound to this
-    # repo, the `release.yml` workflow file and the `nuget` environment. No stored API key.
+    # repo, the `release.yml` workflow file and the `nuget` environment (hence the `environment:`
+    # key above - dropping it would break the OIDC exchange). No stored API key.
     - name: NuGet login (OIDC to temporary API key)
       uses: NuGet/login@v1
       id: nuget-login
